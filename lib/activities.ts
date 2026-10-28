@@ -8,31 +8,31 @@ export const figures: FigureRound[] = [
   {
     word: "MAÇÃ",
     emoji: "🍎",
-    hint: "Uma fruta vermelhinha!",
+    hint: "Uma fruta vermelhinha.",
     choices: [
-      { name: "BOLA", emoji: "⚽" },
+      { name: "PÃO", emoji: "🍞" },
       { name: "MAÇÃ", emoji: "🍎" },
-      { name: "GATO", emoji: "🐱" },
+      { name: "LEITE", emoji: "🥛" },
     ],
   },
   {
-    word: "GATO",
-    emoji: "🐱",
-    hint: "Quem faz miau?",
+    word: "PÃO",
+    emoji: "🍞",
+    hint: "Pode fazer parte do café da manhã.",
     choices: [
-      { name: "GATO", emoji: "🐱" },
-      { name: "SOL", emoji: "☀️" },
-      { name: "BOLA", emoji: "⚽" },
+      { name: "PÃO", emoji: "🍞" },
+      { name: "LEITE", emoji: "🥛" },
+      { name: "MAÇÃ", emoji: "🍎" },
     ],
   },
   {
-    word: "BOLA",
-    emoji: "⚽",
-    hint: "A gente pode chutar e rolar!",
+    word: "LEITE",
+    emoji: "🥛",
+    hint: "Uma bebida que pode ir no copo.",
     choices: [
       { name: "MAÇÃ", emoji: "🍎" },
-      { name: "GATO", emoji: "🐱" },
-      { name: "BOLA", emoji: "⚽" },
+      { name: "PÃO", emoji: "🍞" },
+      { name: "LEITE", emoji: "🥛" },
     ],
   },
 ];
@@ -70,9 +70,9 @@ export const associations = [
 ];
 export const sentences = [
   {
-    emoji: "🦕 🍎",
-    words: ["DINO", "COME", "MAÇÃ"],
-    options: ["MAÇÃ", "DINO", "COME"],
+    emoji: "👦 🍎",
+    words: ["MENINO", "COME", "MAÇÃ"],
+    options: ["MAÇÃ", "MENINO", "COME"],
   },
   {
     emoji: "🐱 ⚽",
@@ -80,8 +80,8 @@ export const sentences = [
     options: ["QUER", "BOLA", "GATO"],
   },
   {
-    emoji: "🦕 💧",
-    words: ["DINO", "BEBE", "ÁGUA"],
-    options: ["ÁGUA", "DINO", "BEBE"],
+    emoji: "👦 💧",
+    words: ["MENINO", "BEBE", "ÁGUA"],
+    options: ["ÁGUA", "MENINO", "BEBE"],
   },
 ];

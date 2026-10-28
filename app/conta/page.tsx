@@ -5,15 +5,17 @@ import type { User } from "@supabase/supabase-js";
 import { browserAuth } from "../../lib/supabase-browser";
 import { PLAN } from "../../lib/plan";
 import { type FamilyProfile } from "../../lib/profile";
-import { DinoScene } from "../../components/dino-scene";
+
 type Account = {
   active: boolean;
   status: string;
   canManage: boolean;
+  isMaster?: boolean;
   cancelAtPeriodEnd?: boolean;
   periodEnd?: string;
 };
 const statuses: Record<string, string> = {
+  master: "Acesso master",
   active: "Ativa",
   trialing: "Período de teste",
   past_due: "Pagamento pendente",
@@ -63,6 +65,7 @@ export default function AccountPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error);
       setAccount(data);
+      return data;
     } catch (e) {
       setMessage(
         e instanceof Error
@@ -140,11 +143,16 @@ export default function AccountPage() {
       }
     } catch {}
     const params = new URLSearchParams(window.location.search);
+    if (params.get("modo") === "login") setMode("login");
+    if (params.has("assinatura"))
+      setMessage(
+        "Escolha a assinatura mensal para acessar a biblioteca de atividades.",
+      );
     if (params.has("checkout"))
       setMessage(
         params.get("checkout") === "success"
           ? "Você voltou do pagamento. Estamos consultando sua assinatura."
-          : "O checkout foi fechado. Você pode continuar com as atividades gratuitas.",
+          : "O checkout foi fechado. Você pode escolher a assinatura quando quiser.",
       );
     if (params.has("reenviar")) setMode("signup");
     return () => {
@@ -159,8 +167,9 @@ export default function AccountPage() {
           ? user.user_metadata.full_name.slice(0, 80)
           : "",
       );
-      void loadProfile();
-      void refresh();
+      void refresh().then((result) => {
+        if (!result?.isMaster) void loadProfile();
+      });
     } else {
       setProfile(null);
       setAccount(null);
@@ -357,7 +366,7 @@ export default function AccountPage() {
     <>
       <header className="family-header">
         <Link className="brand" href="/">
-          🦕 Fala<span className="brand-light">Brinca</span>
+          Fala<span className="brand-light">Brinca</span>
         </Link>
         <Link className="adult-link" href="/">
           ← Voltar às brincadeiras
@@ -374,7 +383,7 @@ export default function AccountPage() {
           <p>
             {user
               ? "Acompanhe sua família e sua assinatura, sem complicação."
-              : "Crie seu acesso e venha explorar com a criança. Uma experiência visual, lúdica e sem cobrança por desempenho."}
+              : "Crie sua conta e escolha a assinatura mensal para explorar com a criança."}
           </p>
         </div>
         <div className="family-grid">
@@ -386,11 +395,11 @@ export default function AccountPage() {
                 <span>🌱</span>
                 <h2>Cadastro em preparação</h2>
                 <p>
-                  Enquanto preparamos o serviço de contas, vocês já podem
-                  experimentar as atividades gratuitas.
+                  O cadastro está sendo configurado. Volte à apresentação para
+                  conhecer o aplicativo.
                 </p>
                 <Link className="primary" href="/">
-                  Experimentar gratuitamente →
+                  Voltar à apresentação →
                 </Link>
               </div>
             ) : user ? (
@@ -404,7 +413,22 @@ export default function AccountPage() {
                     <p className="account-email">{user.email}</p>
                   </div>
                 </div>
-                {profileState === "loading" ? (
+                {account?.isMaster ? (
+                  <div className="master-account-note">
+                    <span className="pill">CONTA DO PROPRIETÁRIO</span>
+                    <h2>Seu painel está pronto.</h2>
+                    <p>
+                      Você pode administrar e acessar as atividades sem
+                      contratar assinatura.
+                    </p>
+                    <Link className="primary" href="/admin">
+                      Abrir painel master →
+                    </Link>
+                    <Link className="secondary" href="/atividades">
+                      Abrir biblioteca
+                    </Link>
+                  </div>
+                ) : profileState === "loading" ? (
                   <p>Carregando os dados da família…</p>
                 ) : profileState === "error" ? (
                   <div className="notice">
@@ -483,11 +507,11 @@ export default function AccountPage() {
                   </>
                 ) : (
                   <div className="family-profile">
-                    <h2>O cantinho de {profile?.child_first_name} 🦕</h2>
+                    <h2>O cantinho de {profile?.child_first_name}</h2>
                     <p>
                       Responsável: <strong>{profile?.guardian_name}</strong>
                     </p>
-                    <Link className="primary" href="/">
+                    <Link className="primary" href="/atividades">
                       Vamos brincar →
                     </Link>
                     <button
@@ -536,7 +560,7 @@ export default function AccountPage() {
                     </p>
                   )}
                   {account?.active && (
-                    <Link className="secondary" href="/?aventura=premium">
+                    <Link className="secondary" href="/atividades">
                       Explorar todas as atividades →
                     </Link>
                   )}
@@ -676,7 +700,7 @@ export default function AccountPage() {
                 </h2>
                 <p className="form-intro">
                   {mode === "signup"
-                    ? "A conta é do adulto. Criar seu acesso é gratuito."
+                    ? "A conta é do adulto. As atividades são liberadas após a assinatura."
                     : mode === "reset"
                       ? "Enviaremos um link para você escolher uma nova senha."
                       : "Entre e continue de onde sua família parou."}
@@ -777,7 +801,7 @@ export default function AccountPage() {
                     {busy
                       ? "Aguarde…"
                       : mode === "signup"
-                        ? "Criar conta gratuita"
+                        ? "Criar minha conta"
                         : mode === "login"
                           ? "Entrar"
                           : "Enviar instruções"}
@@ -809,12 +833,8 @@ export default function AccountPage() {
             </div>
           </section>
           <aside className="family-aside">
-            <div className="family-art">
-              <DinoScene />
-              <span>Explorar é mais gostoso juntos. ♡</span>
-            </div>
             <section className="account-card plan-card">
-              <span className="pill">EXPLORADORES DO DINO</span>
+              <span className="pill">PLANO FALABRINCA</span>
               <h2>Um mundo de descobertas.</h2>
               <div className="price">
                 {PLAN.label}
@@ -822,7 +842,7 @@ export default function AccountPage() {
               </div>
               <ul className="benefits">
                 <li>
-                  <b>24 atividades visuais</b>, com 72 rodadas.
+                  <b>Biblioteca visual por categoria e dificuldade.</b>
                 </li>
                 <li>Figuras, associações e histórias em imagens.</li>
                 <li>Instruções faladas: não precisa saber ler.</li>
@@ -832,10 +852,9 @@ export default function AccountPage() {
                 <li>Gerenciamento e cancelamento pelo portal seguro.</li>
               </ul>
               <p className="renewal">
-                Três atividades gratuitas para experimentar. O plano libera as
-                outras 21. Cobrança recorrente de R$ 50,00 por mês até cancelar;
-                ao cancelar a renovação, o acesso continua até o fim do período
-                pago.
+                O acesso às atividades é exclusivo para assinantes. Cobrança
+                recorrente de R$ 50,00 por mês até cancelar; ao cancelar a
+                renovação, o acesso continua até o fim do período pago.
               </p>
               <button
                 className="primary"
@@ -854,7 +873,9 @@ export default function AccountPage() {
                 onClick={() => void billing("checkout")}
               >
                 {account?.active
-                  ? "Sua assinatura está ativa"
+                  ? account.isMaster
+                    ? "Acesso master liberado"
+                    : "Sua assinatura está ativa"
                   : !user
                     ? "Entre ou crie sua conta para assinar"
                     : "Assinar por R$ 50,00/mês"}

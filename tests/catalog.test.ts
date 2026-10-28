@@ -4,10 +4,12 @@ import { catalog } from "../lib/catalog";
 import { allContent } from "../lib/activity-content";
 import { sequencePictures } from "../lib/pictures";
 import { parseProfile } from "../lib/profile";
-test("24 atividades distintas e 72 rodadas completas, com três demonstrações gratuitas", () => {
+test("24 atividades distintas e 72 rodadas completas, por categoria e dificuldade", () => {
   assert.equal(catalog.length, 24);
   assert.equal(new Set(catalog.map((a) => a.id)).size, 24);
-  assert.equal(catalog.filter((a) => a.free).length, 3);
+  assert.equal(catalog.filter((a) => a.difficulty === "beginner").length, 8);
+  for (const a of catalog)
+    assert.ok(["animals", "objects", "foods"].includes(a.category));
   assert.equal(
     catalog.reduce((n, a) => n + allContent[a.id].rounds.length, 0),
     72,

@@ -34,7 +34,7 @@ const session = {
   user,
 };
 async function authMock(page: Page) {
-  await page.route("https://auth.falabrinca.test/auth/v1/**", async (route) => {
+  await page.route("http://127.0.0.1:5400/auth/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/signup"))
       return route.fulfill({ json: { user, session: null } });
@@ -83,7 +83,7 @@ test("e-mail confirmado leva ao perfil, sem novo login; nomes, pagamento e saíd
   await page.getByLabel("E-mail do responsável").fill(user.email);
   await page.getByLabel(/^Senha/).fill("SenhaTeste123!");
   await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Criar conta gratuita" }).click();
+  await page.getByRole("button", { name: "Criar minha conta" }).click();
   await expect(
     page.getByRole("heading", { name: /Um convite chegou/ }),
   ).toBeVisible();
@@ -119,7 +119,7 @@ test("Google encaminha ao provedor com retorno para o cadastro — autorização
   page,
 }) => {
   await authMock(page);
-  await page.route("https://auth.falabrinca.test/auth/v1/authorize**", (r) =>
+  await page.route("http://127.0.0.1:5400/auth/v1/authorize**", (r) =>
     r.fulfill({ contentType: "text/html", body: "<p>Provedor simulado</p>" }),
   );
   await page.goto("/conta");
@@ -163,7 +163,7 @@ for (const activity of catalog)
     await authMock(page);
     await page.addInitScript(
       (value) =>
-        localStorage.setItem("sb-auth-auth-token", JSON.stringify(value)),
+        localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
       session,
     );
     await page.route("**/api/profile", (r) =>
@@ -172,9 +172,29 @@ for (const activity of catalog)
     await page.route(`**/api/activities/${activity.id}`, (r) =>
       r.fulfill({ json: content[activity.id] }),
     );
-    await page.goto(`/?atividade=${activity.id}`);
-    await page.locator(".picture-options").waitFor();
+    await page.route("**/api/library", (r) =>
+      r.fulfill({ json: { activities: catalog, role: "subscriber" } }),
+    );
+    await page.goto("/atividades");
+    if (activity.difficulty !== "beginner")
+      await page
+        .getByRole("button", {
+          name:
+            activity.difficulty === "intermediate"
+              ? "Intermediário: associar figuras"
+              : "Avançado: histórias visuais",
+          exact: true,
+        })
+        .click();
+    await page
+      .getByRole("button", { name: `Jogar ${activity.title}`, exact: true })
+      .click();
+    await page.locator(".picture-prompt").waitFor();
     for (const [index, round] of content[activity.id].rounds.entries()) {
+      if (activity.difficulty === "beginner")
+        await page
+          .getByRole("button", { name: "Ir para a seleção da figura" })
+          .click();
       const answers = round.words
         ? sequencePictures(round.words).map((piece) => piece.name.split(":")[1])
         : [round.answer];
@@ -193,3 +213,182 @@ for (const activity of catalog)
       ),
     ).toBe(true);
   });
+
+test("servidor limita master ao ID configurado e exige assinatura dos demais — provedor local simulado", async ({
+  request,
+}) => {
+  const member = {
+    Authorization: "Bearer member-fixture",
+    Origin: "http://localhost:3101",
+  };
+  const master = {
+    Authorization: "Bearer master-fixture",
+    Origin: "http://localhost:3101",
+  };
+  expect(
+    (await request.get("/api/admin/activities", { headers: member })).status(),
+  ).toBe(403);
+  expect(
+    (await request.get("/api/library", { headers: member })).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.get("/api/activities/figuras-inicio", { headers: member })
+    ).status(),
+  ).toBe(403);
+  expect(
+    (await request.post("/api/admin/seed", { headers: member })).status(),
+  ).toBe(403);
+  const owner = await request.get("/api/account", { headers: master });
+  expect(owner.status()).toBe(200);
+  expect((await owner.json()).isMaster).toBe(true);
+  const imported = await request.post("/api/admin/seed", { headers: master });
+  expect(imported.status()).toBe(200);
+  const library = await request.get("/api/library", { headers: master });
+  expect(library.status()).toBe(200);
+  expect((await library.json()).activities.length).toBeGreaterThanOrEqual(24);
+  const seedAgain = await request.post("/api/admin/seed", { headers: master });
+  expect((await seedAgain.json()).imported).toBe(0);
+  const id = "teste-edicao-segura";
+  const payload = {
+    ...catalog[0],
+    id,
+    title: "Card de teste do master",
+    published: true,
+    revision: 1,
+    content: { id, rounds: content[catalog[0].id].rounds },
+  };
+  const create = await request.post("/api/admin/activities", {
+    headers: master,
+    data: payload,
+  });
+  expect(create.status()).toBe(201);
+  expect(
+    (
+      await request.post("/api/admin/activities", {
+        headers: member,
+        data: payload,
+      })
+    ).status(),
+  ).toBe(403);
+  const updated = await request.put(`/api/admin/activities/${id}`, {
+    headers: master,
+    data: { ...payload, title: "Card atualizado" },
+  });
+  expect(updated.status()).toBe(200);
+  expect((await updated.json()).activity.revision).toBe(2);
+  expect(
+    (
+      await request.put(`/api/admin/activities/${id}`, {
+        headers: master,
+        data: payload,
+      })
+    ).status(),
+  ).toBe(409);
+  expect(
+    (await request.get(`/api/activities/${id}`, { headers: master })).status(),
+  ).toBe(200);
+  expect(
+    (
+      await request.delete(`/api/admin/activities/${id}?revision=1`, {
+        headers: master,
+      })
+    ).status(),
+  ).toBe(409);
+  expect(
+    (
+      await request.delete(`/api/admin/activities/${id}?revision=2`, {
+        headers: master,
+      })
+    ).status(),
+  ).toBe(200);
+  expect(
+    (await request.get(`/api/activities/${id}`, { headers: master })).status(),
+  ).toBe(404);
+  expect(
+    (
+      await request.post("/api/admin/seed", {
+        headers: { ...master, Origin: "https://outro.example" },
+      })
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.post("/api/admin/media", {
+        headers: master,
+        multipart: {
+          file: {
+            name: "quebrada.png",
+            mimeType: "image/png",
+            buffer: Buffer.from("not an image"),
+          },
+        },
+      })
+    ).status(),
+  ).toBe(400);
+});
+
+test("painel master cria, edita e apaga card pela interface — banco simulado", async ({
+  page,
+  request,
+}) => {
+  const owner = {
+    ...user,
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    email: "master@example.test",
+  };
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    { ...session, access_token: "master-fixture", user: owner },
+  );
+  await page.route("http://127.0.0.1:5400/auth/v1/user", (route) =>
+    route.fulfill({ json: owner }),
+  );
+  await page.goto("/admin");
+  await page
+    .getByRole("button", { name: "+ Nova atividade", exact: true })
+    .click();
+  await page.getByLabel("Título do card").fill("Animais do quintal");
+  await page.getByLabel("Publicar na biblioteca dos assinantes").check();
+  await page
+    .getByRole("button", { name: "Salvar atividade", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Animais do quintal", exact: true }),
+  ).toBeVisible();
+  let row = page.locator(".admin-activity-list article").filter({
+    has: page.getByRole("heading", {
+      name: "Animais do quintal",
+      exact: true,
+    }),
+  });
+  await row.getByRole("button", { name: "Editar", exact: true }).click();
+  await page.getByLabel("Título do card").fill("Animais do quintal atualizado");
+  await page
+    .getByRole("button", { name: "Salvar atividade", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Animais do quintal atualizado",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "/tmp/falabrinca-master-mobile.png",
+    fullPage: true,
+  });
+  row = page.locator(".admin-activity-list article").filter({
+    has: page.getByRole("heading", {
+      name: "Animais do quintal atualizado",
+      exact: true,
+    }),
+  });
+  page.once("dialog", (dialog) => dialog.accept());
+  await row.getByRole("button", { name: "Apagar", exact: true }).click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Animais do quintal atualizado",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+});

@@ -64,7 +64,7 @@ export default function ContinueAuth() {
   }, []);
   return (
     <main className="auth-bridge">
-      <div className="brand">🦕 FalaBrinca</div>
+      <div className="brand">FalaBrinca</div>
       <div className="account-card">
         <span className="bridge-icon">{error ? "✉️" : "🌱"}</span>
         <h1>{error ? "Vamos tentar de novo?" : "Preparando seu cantinho…"}</h1>

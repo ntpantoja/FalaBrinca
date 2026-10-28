@@ -3,7 +3,7 @@ export const PLAN = {
   currency: "brl",
   interval: "month",
   label: "R$ 50,00",
-  name: "Exploradores do Dino",
+  name: "Plano FalaBrinca",
 } as const;
 export function matchesPlan(price: {
   active: boolean;

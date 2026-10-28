@@ -1,6 +1,6 @@
 # Atualização visual, confirmação por e-mail e Google
 
-A versão nova tem **24 atividades com 72 rodadas**. A área infantil usa figuras, sequências de imagens, botões com símbolos e áudio. Não exige leitura. Textos de cadastro, mensalidade, privacidade e instruções para os responsáveis ficam na área adulta. As três demonstrações continuam gratuitas e o preço permanece R$ 50,00/mês.
+A versão nova tem **24 atividades com 72 rodadas**. A área infantil usa figuras, sequências de imagens, botões com símbolos e áudio. Não exige leitura. Textos de cadastro, mensalidade, privacidade e instruções para os responsáveis ficam na área adulta. Todas as atividades exigem assinatura ativa. O preço permanece R$ 50,00/mês. Para o editor de conteúdo, veja também ATIVAR-ACESSO-MASTER.md.
 
 ## 1. Atualizar o banco para guardar os nomes
 

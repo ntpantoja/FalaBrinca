@@ -6,14 +6,15 @@ export type Adventure = {
   kind: ActivityKind;
   emoji: string;
   color: string;
-  free: boolean;
+  category: "animals" | "objects" | "foods";
+  difficulty: "beginner" | "intermediate" | "advanced";
   minutes: number;
 };
 const entries: [string, string, string, string, string][] = [
   [
     "figuras-inicio",
-    "Que figura é essa?",
-    "As primeiras descobertas do Dino.",
+    "Alimentos do dia a dia",
+    "Ouça, repita e selecione os alimentos.",
     "🍎",
     "mint",
   ],
@@ -24,13 +25,7 @@ const entries: [string, string, string, string, string][] = [
     "🍓",
     "peach",
   ],
-  [
-    "animais",
-    "Bichinhos do bosque",
-    "Conheça os amigos do Dino.",
-    "🐶",
-    "lavender",
-  ],
+  ["animais", "Bichinhos do bosque", "Conheça os animais.", "🐶", "lavender"],
   [
     "transportes",
     "Vamos passear?",
@@ -49,9 +44,9 @@ const entries: [string, string, string, string, string][] = [
   ["roupas", "Hora de se vestir", "Cada peça tem seu nome.", "🧢", "sky"],
   [
     "dinossauros",
-    "Vale dos dinossauros",
-    "Explore o lar dos nossos amigos.",
-    "🦕",
+    "Animais grandes",
+    "Conheça animais de diferentes tamanhos.",
+    "🐘",
     "mint",
   ],
   [
@@ -63,7 +58,7 @@ const entries: [string, string, string, string, string][] = [
   ],
   [
     "refeicao",
-    "A mesa do Dino",
+    "Hora da refeição",
     "O que combina com cada refeição?",
     "🥣",
     "butter",
@@ -82,7 +77,13 @@ const entries: [string, string, string, string, string][] = [
     "🐠",
     "mint",
   ],
-  ["clima", "Sol ou chuva?", "Prepare o Dino para cada tempo.", "🌦️", "butter"],
+  [
+    "clima",
+    "Sol ou chuva?",
+    "Prepare a criança para cada tempo.",
+    "🌦️",
+    "butter",
+  ],
   [
     "profissoes",
     "Quem usa isso?",
@@ -99,7 +100,7 @@ const entries: [string, string, string, string, string][] = [
   ],
   [
     "emocoes",
-    "Como o Dino se sente?",
+    "Como eu me sinto?",
     "Converse sobre sentimentos e cuidados.",
     "💛",
     "mint",
@@ -113,7 +114,7 @@ const entries: [string, string, string, string, string][] = [
   ],
   [
     "frases-comida",
-    "Dino está com fome",
+    "Hora de comer",
     "Monte frases sobre a hora de comer.",
     "🍌",
     "butter",
@@ -134,7 +135,7 @@ const entries: [string, string, string, string, string][] = [
   ],
   [
     "frases-rotina",
-    "Um dia com o Dino",
+    "Nossa rotina",
     "Organize palavras da nossa rotina.",
     "🛁",
     "sky",
@@ -169,7 +170,18 @@ export const catalog: Adventure[] = entries.map(
     emoji,
     color,
     kind: index < 8 ? "figures" : index < 16 ? "association" : "sentence",
-    free: [0, 8, 16].includes(index),
+    category: [
+      "figuras-inicio",
+      "frutas",
+      "refeicao",
+      "frases-comida",
+    ].includes(id)
+      ? "foods"
+      : ["animais", "dinossauros", "habitats", "frases-animais"].includes(id)
+        ? "animals"
+        : "objects",
+    difficulty:
+      index < 8 ? "beginner" : index < 16 ? "intermediate" : "advanced",
     minutes: 3,
   }),
 );
@@ -178,13 +190,14 @@ export const kindLabels: Record<ActivityKind, string> = {
   association: "Fazer associações",
   sentence: "Contar histórias em imagens",
 };
-export type Choice = { name: string; emoji: string };
+export type Choice = { name: string; emoji: string; image_url?: string };
 export type Round = {
   prompt: string;
   hint: string;
   choices: Choice[];
   answer: string;
   scene?: string;
+  sequence?: Choice[];
   words?: string[];
   options?: string[];
 };

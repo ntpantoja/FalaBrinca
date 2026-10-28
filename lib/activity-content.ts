@@ -80,9 +80,9 @@ const extra: ActivityContent[] = [
     ["BONÉ", "🧢", "Vai na cabeça para o passeio."],
   ]),
   figures("dinossauros", [
-    ["DINOSSAURO", "🦕", "Um amigo de pescoço comprido."],
-    ["OVO", "🥚", "O filhote pode nascer de dentro dele."],
-    ["VULCÃO", "🌋", "Uma montanha que pode soltar lava."],
+    ["ELEFANTE", "🐘", "Um animal grande com tromba."],
+    ["LEÃO", "🦁", "Um animal que tem juba."],
+    ["GIRAFA", "🦒", "Um animal de pescoço comprido."],
   ]),
   pairs("refeicao", [
     [
@@ -101,7 +101,7 @@ const extra: ActivityContent[] = [
     ],
     [
       "💧",
-      "Dino quer beber água. Onde colocamos a água?",
+      "Nosso amigo quer beber água. Onde colocamos a água?",
       c("COPO", "🥛"),
       c("SAPATO", "👟"),
       c("LIVRO", "📖"),
@@ -209,7 +209,7 @@ const extra: ActivityContent[] = [
     ],
     [
       "🖍️",
-      "Dino quer fazer um desenho. Onde pode desenhar?",
+      "Nosso amigo quer fazer um desenho. Onde pode desenhar?",
       c("PAPEL", "📄"),
       c("ÁGUA", "🌊"),
       c("SAPATO", "👟"),
@@ -225,28 +225,28 @@ const extra: ActivityContent[] = [
   pairs("emocoes", [
     [
       "😢",
-      "Dino está triste e quer companhia. O que pode ajudar?",
+      "Nosso amigo está triste e quer companhia. O que pode ajudar?",
       c("CONVERSAR", "💬"),
       c("EMPURRAR", "✋"),
       c("GRITAR", "📢"),
     ],
     [
       "🥱",
-      "Dino está com sono. O que ele pode fazer?",
+      "Nosso amigo está com sono. O que ele pode fazer?",
       c("DESCANSAR", "🛏️"),
       c("CORRER", "🏃"),
       c("PULAR", "🦘"),
     ],
     [
       "😠",
-      "Dino está bravo. Vamos ajudá-lo a se acalmar?",
+      "Nosso amigo está bravo. Vamos ajudá-lo a se acalmar?",
       c("RESPIRAR", "🌬️"),
       c("BATER", "👊"),
       c("QUEBRAR", "💥"),
     ],
   ]),
   phrases("frases-comida", [
-    ["🦕 🍌", ["DINO", "COME", "BANANA"]],
+    ["👦 🍌", ["MENINO", "COME", "BANANA"]],
     ["🐰 🥕", ["COELHO", "COME", "CENOURA"]],
     ["👧 💧", ["MENINA", "BEBE", "ÁGUA"]],
   ]),
@@ -256,12 +256,12 @@ const extra: ActivityContent[] = [
     ["🐟 🌊", ["PEIXE", "NADA", "NA", "ÁGUA"]],
   ]),
   phrases("frases-parque", [
-    ["🦕 ⚽", ["DINO", "CHUTA", "BOLA"]],
+    ["👦 ⚽", ["MENINO", "CHUTA", "BOLA"]],
     ["👧 🌻", ["MENINA", "CHEIRA", "FLOR"]],
     ["👦 🪁", ["MENINO", "SOLTA", "PIPA"]],
   ]),
   phrases("frases-rotina", [
-    ["🦕 🛁", ["DINO", "TOMA", "BANHO"]],
+    ["👦 🛁", ["MENINO", "TOMA", "BANHO"]],
     ["👧 🪥", ["MENINA", "ESCOVA", "DENTES"]],
     ["👦 🛏️", ["MENINO", "VAI", "DORMIR"]],
   ]),
@@ -276,7 +276,7 @@ const extra: ActivityContent[] = [
     ["🐦 🌳", ["PÁSSARO", "POUSA", "NA", "ÁRVORE"]],
   ]),
   phrases("frases-carinho", [
-    ["🦕 🤗", ["DINO", "PEDE", "ABRAÇO"]],
+    ["👦 🤗", ["MENINO", "PEDE", "ABRAÇO"]],
     ["🤝 💛", ["EU", "GOSTO", "DE", "VOCÊ"]],
     ["🧸 🌙", ["BOA", "NOITE", "AMIGO"]],
   ]),

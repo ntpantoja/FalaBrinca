@@ -1,34 +1,45 @@
-# FalaBrinca 🦕
+# FalaBrinca
 
-PWA educativa para crianças de 3 a 5 anos com acompanhamento de um adulto, feita em Next.js e TypeScript. **Não substitui avaliação ou terapia fonoaudiológica.**
+Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adulto. **Não substitui avaliação ou terapia fonoaudiológica.**
 
-## Novidades desta versão
+## Fluxo atual
 
-- 24 atividades com 72 rodadas: reconhecer figuras, associar imagens e montar histórias visuais, sem depender de leitura. Três atividades demonstrativas são gratuitas.
-- Interface modernizada com ilustração do Dino, navegação por ícones, filtros, favoritos, pausa, ajuda visual e jardim de conquistas.
-- Voz do navegador, tentativas sem punição e estrelas locais.
-- Cadastro, login com e-mail ou Google e confirmação com retorno conectado para o perfil familiar. Nome do responsável e primeiro nome da criança são preenchidos com autorização explícita.
-- Plano Exploradores do Dino: **R$ 50,00/mês**, com 21 atividades adicionais disponíveis exclusivamente por uma API autenticada.
-- Checkout Stripe vinculado ao usuário, consulta de assinatura no servidor e portal para cancelamento/gerenciamento.
-- Webhook Stripe com assinatura verificada, processamento idempotente e armazenamento protegido por RLS.
-- PWA gratuita offline, sem cache de páginas da conta, tokens ou respostas financeiras.
+- `/`: apresentação do aplicativo e do plano de **R$ 50,00/mês**, com cadastro/login. Não oferece demonstração de jogos.
+- `/conta`: cadastro, Google, confirmação por e-mail, perfil familiar e assinatura.
+- `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa.
+- `/admin`: painel exclusivo da conta master, com criação, edição, prévia, publicação, ocultação, exclusão e upload de ilustrações.
 
-As integrações exigem configuração externa. Sem ela, as atividades gratuitas funcionam e a área de contas informa que está em preparação. Não há cadastro local fictício nem liberação de acesso por um parâmetro da URL.
+As categorias são **Animais, Objetos e Alimentos**. Dificuldades:
 
-## Executar no computador
+1. **Inicial**: imagem e áudio da palavra → convite à repetição → seleção da figura.
+2. **Intermediário**: associações de imagens com instruções faladas.
+3. **Avançado**: organização de histórias em imagens.
 
-Instale Node.js 24 LTS e Git. No terminal:
+Não há leitura obrigatória nos jogos. Não gravamos voz e não verificamos a pronúncia ou a repetição. Favoritos e progresso ficam no dispositivo, separados da conta.
+
+## Configurar os serviços
+
+- [Cadastro e pagamentos](ATIVAR-CADASTRO-E-PAGAMENTOS.md).
+- [Google e perfil familiar](ATUALIZAR-GOOGLE-E-PERFIL.md).
+- **[Ativar a conta master e importar a biblioteca](ATIVAR-ACESSO-MASTER.md)** — necessário nesta atualização.
+
+Para uma instalação nova, execute `supabase/schema.sql`. Para a atualização de uma instalação já existente, execute `supabase/master-content-migration.sql`, configure `MASTER_USER_ID` e importe as 24 atividades no painel. A biblioteca fica no banco, não é recriada nem sobrescrita ao reiniciar. Sem configuração ou sem assinatura, o sistema não libera jogos por fallback.
+
+## Executar
+
+Requer Node.js 24 LTS.
 
 ```bash
-git clone https://github.com/ntpantoja/FalaBrinca.git
-cd FalaBrinca
 npm ci
 npm run dev
 ```
 
-Abra `http://localhost:3000`. Para parar, Ctrl+C. Se já baixou anteriormente, use `git pull` e depois `npm ci`.
+Abra `http://localhost:3000`. Copie `.env.example` para `.env.local` para configurar serviços de teste. Nunca envie chaves secretas ao GitHub ou ao chat.
 
-Veja **[ATIVAR-CADASTRO-E-PAGAMENTOS.md](ATIVAR-CADASTRO-E-PAGAMENTOS.md)** para ativação inicial. Para esta atualização, siga **[ATUALIZAR-GOOGLE-E-PERFIL.md](ATUALIZAR-GOOGLE-E-PERFIL.md)**: a tabela de perfis e a nova URL de retorno precisam ser configuradas no Supabase; Google precisa ser habilitado no provedor.
+```bash
+npm run build
+npm start
+```
 
 ## Testes
 
@@ -41,52 +52,33 @@ npm run test:e2e
 npm run test:auth-ui
 ```
 
-Os testes de navegador usam o build de produção em `localhost:3100` e dados fictícios do webhook. Não criam contas reais nem cobram cartões. Execute `npm run build` antes deles; o build deve estar sem configuração pública Supabase para os testes de indisponibilidade. Não use credenciais reais no ambiente de testes. Em máquinas com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` com seu caminho.
+`test:e2e` verifica apresentação do plano, ausência de demonstração, autenticação obrigatória, proteção do painel, webhook e exclusão das páginas privadas do cache. Precisa de build sem configuração Supabase pública.
 
-`npm run test:auth-ui` faz um build separado com um endereço fictício de autenticação e testa confirmação de e-mail, perfil familiar, retorno ao provedor Google, saída, recuperação e as 24 atividades completas com respostas simuladas, na porta 3101. Ao terminar, rode `npm run build` novamente com as configurações corretas antes de usar o aplicativo fora dos testes.
+`test:auth-ui` faz um build com serviço Supabase local **simulado**, testa confirmação, Google, os 24 jogos e permissões/CRUD do master. Não usa um banco Supabase real nem cobra cartões. O provedor em `tests/mock-supabase.mjs` é uma fixture de teste e nunca deve ser usado como backend real. Depois dessa suíte, execute `npm run build` com as configurações corretas para remover o build fictício. Em ambientes com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
 
-Cobertura: 24 atividades completas com imagens, tentativas incorretas, recompensas, filtros e favoritos persistidos, pausa, preço, indisponibilidade sem configuração, autenticação exigida nas APIs, rejeição de origem externa, webhook e atividade offline. O fluxo de confirmação até o formulário familiar é testado sem uma nova tela de login. Testes de conteúdo verificam 24 atividades/72 rodadas, pictogramas sem ambiguidades e autorização do perfil. Testes de cobrança validam valor, moeda, recorrência e estados com acesso premium.
+Os testes de permissão verificam que metadados `role: master` no usuário comum não concedem acesso administrativo; o ID configurado e o usuário verificado no servidor são a autoridade. Os testes de edição incluem conflitos de versão e exclusão. Validações de conteúdo cobrem categorias, níveis, respostas e imagens.
 
-**Os testes locais não comprovam integração com contas reais Supabase/Stripe.** Após configurar, execute o roteiro de ponta a ponta no guia antes de vender. O esquema SQL deve ser aplicado e validado no seu projeto Supabase.
-
-## PWA
-
-```bash
-npm run build
-npm start
-```
-
-Acesse a página inicial e espere o service worker ativar antes de testar offline. O service worker não registra em desenvolvimento. Ao publicar alterações, incremente o nome do cache em `public/sw.js`. No Android use “Instalar aplicativo”; no iPhone, Safari → Compartilhar → Adicionar à Tela de Início. Fora de localhost, HTTPS é obrigatório.
-
-Cadastro, assinatura e trilha de assinantes precisam de conexão. A atividade premium já carregada pode terminar em memória, mas precisa validar acesso ao abri-la novamente. Não há DRM: conteúdo exibido pode ser copiado ou capturado pelo usuário.
+**Validação local simulada não comprova a configuração real de Supabase, Google, Storage ou Stripe.** Execute a migração e o roteiro manual do guia na sua conta antes de usar comercialmente.
 
 ## Arquitetura
 
-- `app/page.tsx`, `components/activity.tsx`, `lib/activities.ts`: trilhas educativas.
-- `app/conta/page.tsx`: cadastro/login, status e assinatura.
-- `app/recuperar-senha/page.tsx`: redefinição pelo link de e-mail.
-- `app/api/checkout`: exige usuário confirmado, origem correta, webhook configurado e preço exato de R$ 50 mensais; reutiliza sessão aberta e rejeita assinatura em andamento.
-- `app/api/account`: consulta o Stripe, não aceita status informado pelo cliente.
-- `app/api/portal`: abre o portal para o cliente associado ao usuário autenticado.
-- `app/api/activities/[id]`: entrega conteúdo de cada atividade; conteúdo pago exige usuário confirmado e assinatura ativa ou em teste.
-- `lib/catalog.ts`: metadados públicos das 24 atividades; `lib/activity-content.ts`: conteúdo exclusivo do servidor; `lib/free-content.ts`: somente as três demonstrações.
-- `app/auth/continuar`: valida o retorno de autenticação e encaminha ao perfil familiar.
-- `app/api/profile`: lê, atualiza e apaga somente o perfil do usuário autenticado, mediante validação e autorização explícita.
-- `app/api/webhooks/stripe`: verifica o corpo original com a assinatura Stripe e persiste eventos atomicamente. Responde com erro para permitir reenvio em falhas de persistência.
-- `supabase/schema.sql`: tabelas, RLS e função transacional restrita ao servidor.
-- `app/informacoes`: informações iniciais de uso e privacidade; requer identificação comercial e revisão antes da abertura de vendas.
+- `lib/access.ts`: verificação de assinatura ou master no servidor. Não confia no papel enviado pelo cliente.
+- `app/api/library`, `app/api/activities/[id]`: dados protegidos da biblioteca e das rodadas.
+- `app/api/admin/*`: somente master; operações de escrita também conferem origem da requisição.
+- `learning_activities`: conteúdo no Supabase com RLS e escrita/leitura exclusivas pelas APIs do servidor.
+- `MASTER_USER_ID`: UUID do proprietário configurado apenas no servidor. Não é senha nem e-mail. Não existe administrador padrão.
+- `lib/catalog.ts` e `lib/activity-content.ts`: material de importação inicial. Não são fallback público.
+- `app/api/admin/seed`: importação explícita; preserva registros existentes.
+- `app/api/admin/media`: valida, redimensiona e reencoda ilustrações PNG/JPG/WebP antes de enviar ao Storage.
+- `app/api/checkout`, `account`, `portal`, `webhooks/stripe`: cobrança, status verificado e cancelamento pelo Stripe.
+- `app/api/profile`: nomes da família, com autorização explícita e verificação do usuário.
 
-A assinatura é consultada diretamente no Stripe para autorização. O banco guarda um resumo por assinatura e ignora eventos anteriores; eventos diferentes do mesmo segundo podem atualizar esse resumo na ordem de chegada, mas não determinam o acesso premium. Não altere o preço cadastrado sem planejar migração: o acesso é associado a `STRIPE_PRICE_ID`.
+Não altere o identificador do preço Stripe sem planejar migração dos assinantes. O valor aceito continua sendo BRL 5000, recorrente mensal.
 
-## Limites atuais
+## PWA e privacidade
 
-- Estrelas, histórico e favoritos não são sincronizados na conta; ficam no dispositivo, mesmo ao trocar de usuário, e podem ser apagados na área dos adultos.
-- Não há gravação de voz nem avaliação automática de pronúncia.
-- Não há painel administrativo, reembolso automatizado ou exclusão autônoma de conta. Cancelamento de renovação ocorre pelo portal Stripe; atendimento e solicitações de dados precisam de canal do responsável comercial antes do lançamento.
-- Configure SMTP próprio, limites de autenticação, proteção contra abuso e monitoramento no Supabase/Stripe antes de divulgação pública.
-- O portal deve ser configurado para cancelar ao fim do período, sem troca de plano nesta versão.
-- Não há limitação distribuída própria das rotas de cobrança. Configure regras de proteção/rate limit na hospedagem antes de abrir vendas em escala.
+O aplicativo continua instalável em HTTPS. Somente a apresentação pública tem suporte offline. **Biblioteca, conta, painel master, APIs e callbacks não entram no cache**; atividades exigem conexão para validar o acesso. Uma rodada já carregada pode continuar em memória, mas cada nova abertura consulta o servidor. Conteúdo exibido pode ser capturado; não há DRM.
 
-## Privacidade
+O primeiro nome da criança e o nome do responsável ficam no perfil autenticado, não no cache offline. Cartões são processados pelo Stripe. A voz usa recursos do navegador/dispositivo. As ilustrações da biblioteca ficam em um bucket público e não devem conter dados pessoais.
 
-A conta usa autenticação Supabase com e-mail ou Google do responsável. O perfil armazena nome do adulto e primeiro nome da criança, mediante autorização explícita, e permite editar ou apagar esses nomes. Não há foto, sobrenome ou data de nascimento da criança. Identificadores e estado financeiro são guardados para gerenciar acesso. Cartões são processados pelo Stripe. A fala usa o recurso do navegador/dispositivo. Não use e-mail da criança para autenticação. O nome de personalização não entra no cache offline. As chaves secretas ficam apenas no servidor; `.env.local` não entra no Git.
+Antes de vender, mantenha identificação comercial e atendimento publicados, termos e privacidade revisados, SMTP, limites de autenticação, proteção contra abuso e monitoramento configurados. Não há reembolso automático, exclusão autônoma de conta ou sincronização do progresso nesta versão.

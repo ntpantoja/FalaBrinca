@@ -1,3 +1,5 @@
+> **Acesso atual:** todas as atividades exigem assinatura. O proprietário tem acesso pelo painel master após seguir [ATIVAR-ACESSO-MASTER.md](ATIVAR-ACESSO-MASTER.md). Não há mais demonstrações gratuitas.
+
 > **Já configurou os serviços?** Para esta versão, faça também os passos de [ATUALIZAR-GOOGLE-E-PERFIL.md](ATUALIZAR-GOOGLE-E-PERFIL.md), incluindo tabela de perfis, retorno de confirmação e Google.
 
 # Como ativar cadastro e mensalidade de R$ 50,00
@@ -60,14 +62,14 @@ Para testar localmente, copie `.env.example` para `.env.local`, preencha com os 
 4. Confira “Sem assinatura” e **R$ 50,00/mês**. Clique em **Assinar por R$ 50,00/mês**.
 5. No checkout de teste, confirme o preço e utilize um cartão de teste autorizado pela documentação do Stripe — por exemplo, `4242 4242 4242 4242`, data futura e CVC de teste. Nunca use cartão real no ambiente de teste.
 6. Ao retornar, clique em **Atualizar status**. O acesso só será liberado se o servidor consultar uma assinatura ativa no Stripe. O endereço `?checkout=success` por si só não libera nada.
-7. Abra **Explorar a trilha de assinantes** e escolha e conclua uma das 21 atividades de assinantes. Saia da conta e tente abrir novamente: deve exigir login.
+7. Abra **Explorar a trilha de assinantes** e escolha e conclua uma das atividades da biblioteca. Saia da conta e tente abrir novamente: deve exigir login.
 8. Em **Gerenciar assinatura e cancelamento**, cancele a renovação. Volte e atualize o status: deverá indicar acesso até o fim do período pago.
 9. No Stripe, confira que os eventos foram entregues ao webhook com resposta **200**. Use **Reenviar** para verificar que o mesmo evento não duplica registros. Confira no Supabase o cliente e o resumo da assinatura.
 10. Teste **Esqueci minha senha**, receba o e-mail, defina uma senha nova e confirme novo login.
 11. Teste checkout cancelado, cartão recusado e eventos de inadimplência/encerramento usando as ferramentas de teste do Stripe. Confira que assinaturas inativas não abrem a trilha premium.
 12. Use outra conta de responsável e confirme que ela não vê nem gerencia a assinatura da primeira.
 
-As atividades gratuitas não precisam de conta. O cadastro é dos responsáveis; não cadastre a criança.
+Todas as atividades exigem conta confirmada e assinatura ativa; somente o proprietário configurado como master é dispensado da assinatura. O cadastro é dos responsáveis; não cadastre a criança.
 
 ## 5. Antes de começar a vender
 

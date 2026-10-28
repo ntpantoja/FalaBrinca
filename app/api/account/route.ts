@@ -6,9 +6,21 @@ import {
   stripeClient,
 } from "../../../lib/server";
 import { subscriptionFor } from "../../../lib/billing";
+import { isMasterUser } from "../../../lib/access";
 export async function GET(request: Request) {
   try {
     const { user, db } = await requireUser(request);
+    if (isMasterUser(user.id))
+      return NextResponse.json(
+        {
+          email: user.email,
+          active: true,
+          status: "master",
+          canManage: false,
+          isMaster: true,
+        },
+        { headers: { "Cache-Control": "private, no-store" } },
+      );
     const customer = await customerId(db, user.id);
     if (!customer)
       return NextResponse.json(

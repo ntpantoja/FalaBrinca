@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ActivityContent, Adventure } from "../lib/catalog";
 import { sequencePictures } from "../lib/pictures";
+import { Picture } from "./picture";
 export function Activity({
   adventure,
   content,
@@ -21,11 +22,15 @@ export function Activity({
   const [words, setWords] = useState<string[]>([]);
   const [paused, setPaused] = useState(false);
   const [hint, setHint] = useState(false);
+  const [selecting, setSelecting] = useState(
+    adventure.difficulty !== "beginner",
+  );
   const finished = useRef(false);
   const round = content.rounds[step];
   const count = content.rounds.length;
-  const sentence = !!round.words;
-  const sequence = sentence ? sequencePictures(round.words!) : [];
+  const sentence = !!round.words || !!round.sequence;
+  const sequence =
+    round.sequence ?? (sentence ? sequencePictures(round.words!) : []);
   const choices = sentence
     ? [...sequence.slice(1), sequence[0]]
     : round.choices;
@@ -41,7 +46,9 @@ export function Activity({
     speak(
       sentence
         ? `Vamos contar uma história com figuras. ${round.answer}. Toque nas figuras na ordem.`
-        : round.prompt,
+        : adventure.difficulty === "beginner"
+          ? `${round.answer}. Repita comigo: ${round.answer}. Depois, toque na mão para escolher a figura.`
+          : round.prompt,
     );
     return () => {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -89,10 +96,12 @@ export function Activity({
     setFeedback("");
     setWords([]);
     setHint(false);
+    setSelecting(adventure.difficulty !== "beginner");
   }
-  const target =
-    round.choices.find((c) => c.name === round.answer)?.emoji ||
-    adventure.emoji;
+  const targetChoice = round.choices.find((c) => c.name === round.answer) ?? {
+    name: round.answer,
+    emoji: adventure.emoji,
+  };
   return (
     <section className="game picture-game">
       <div className="game-top">
@@ -127,23 +136,28 @@ export function Activity({
       </div>
       <h1 className="sr-only">{round.prompt}</h1>
       <div className="picture-prompt">
-        <span className="little-dino">🦕</span>
         <div
           className="picture-bubble"
           aria-label={sentence ? "História para montar" : round.prompt}
         >
-          {sentence ? round.scene : round.scene || target}
-          {!sentence && <span className="picture-question">?</span>}
+          {sentence
+            ? round.scene
+            : round.scene || <Picture choice={targetChoice} />}
+          {!sentence && selecting && (
+            <span className="picture-question">?</span>
+          )}
         </div>
         <button
           className="listen big-listen"
-          aria-label={sentence ? "Ouvir a história" : "Ouvir a pergunta"}
+          aria-label={sentence ? "Ouvir a história" : "Ouvir a palavra"}
           disabled={!sound}
           onClick={() =>
             speak(
               sentence
                 ? `${round.answer}. Toque nas figuras na ordem.`
-                : round.prompt,
+                : adventure.difficulty === "beginner"
+                  ? `${round.answer}. Repita comigo: ${round.answer}.`
+                  : round.prompt,
             )
           }
         >
@@ -164,36 +178,53 @@ export function Activity({
                 words[i] ? piece.name.split(":")[1] : `Espaço ${i + 1}`
               }
             >
-              <span>{words[i] ? piece.emoji : hint ? piece.emoji : "?"}</span>
+              <span>{words[i] || hint ? <Picture choice={piece} /> : "?"}</span>
               {i < sequence.length - 1 && <b aria-hidden="true">→</b>}
             </div>
           ))}
         </div>
       )}
-      <div
-        className={
-          sentence
-            ? "picture-options sequence-options"
-            : "choices picture-options"
-        }
-      >
-        {choices.map((choice) => (
+      {!selecting && (
+        <div className="repeat-invitation">
+          <span aria-hidden="true">👂 → 💬</span>
           <button
-            key={choice.name}
-            aria-label={sentence ? choice.name.split(":")[1] : choice.name}
-            disabled={correct || words.includes(choice.name) || paused}
-            onClick={() => choose(choice.name)}
-            className={
-              (correct && !sentence && choice.name === round.answer) ||
-              (hint && !sentence && choice.name === round.answer)
-                ? "chosen"
-                : ""
-            }
+            className="primary picture-next"
+            aria-label="Ir para a seleção da figura"
+            onClick={() => {
+              setSelecting(true);
+              speak(`Agora encontre: ${round.answer}.`);
+            }}
           >
-            <span aria-hidden="true">{choice.emoji}</span>
+            👆
           </button>
-        ))}
-      </div>
+        </div>
+      )}
+      {selecting && (
+        <div
+          className={
+            sentence
+              ? "picture-options sequence-options"
+              : "choices picture-options"
+          }
+        >
+          {choices.map((choice) => (
+            <button
+              key={choice.name}
+              aria-label={sentence ? choice.name.split(":")[1] : choice.name}
+              disabled={correct || words.includes(choice.name) || paused}
+              onClick={() => choose(choice.name)}
+              className={
+                (correct && !sentence && choice.name === round.answer) ||
+                (hint && !sentence && choice.name === round.answer)
+                  ? "chosen"
+                  : ""
+              }
+            >
+              <Picture choice={choice} />
+            </button>
+          ))}
+        </div>
+      )}
       <div className="picture-feedback" aria-live="polite">
         <span aria-hidden="true">
           {correct ? "🌟 🎉 🌟" : feedback ? "🌿 💛" : "✦ ✦ ✦"}
@@ -201,7 +232,7 @@ export function Activity({
         <span className="sr-only">{feedback}</span>
       </div>
       <div className="game-actions">
-        {!correct && (
+        {!correct && selecting && (
           <button
             className="round-tool"
             aria-label="Uma ajudinha"

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { isMasterUser } from "../../../lib/access";
 import {
   appUrl,
   customerId,
@@ -18,6 +19,11 @@ export async function POST(request: Request) {
         "A confirmação de pagamentos ainda não foi configurada. Nenhuma cobrança foi realizada.",
       );
     const { user, db } = await requireUser(request);
+    if (isMasterUser(user.id))
+      throw new HttpError(
+        409,
+        "Sua conta master já tem acesso às atividades, sem contratar assinatura.",
+      );
     const stripe = stripeClient();
     const price = await monthlyPrice(stripe);
     let customer = await customerId(db, user.id);

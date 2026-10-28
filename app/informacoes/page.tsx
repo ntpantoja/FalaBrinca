@@ -3,7 +3,7 @@ export default function Information() {
   return (
     <main className="adult-panel">
       <Link className="brand" href="/">
-        🦕 FalaBrinca
+        FalaBrinca
       </Link>
       <h1>
         Uso, privacidade
@@ -17,9 +17,10 @@ export default function Information() {
       <h2>Uma experiência educativa</h2>
       <p>
         As brincadeiras são destinadas a crianças de 3 a 5 anos com
-        acompanhamento de um adulto. Não fazemos diagnóstico ou avaliação de
-        pronúncia. O aplicativo não substitui avaliação ou terapia
-        fonoaudiológica.
+        acompanhamento de um adulto. Nas atividades iniciais, a criança ouve a
+        palavra, é convidada a repetir e seleciona a imagem. Não gravamos voz,
+        fazemos diagnóstico ou avaliamos a pronúncia. O aplicativo não substitui
+        avaliação ou terapia fonoaudiológica.
       </p>
       <h2>Conta do responsável</h2>
       <p>
@@ -40,12 +41,12 @@ export default function Information() {
         nessa etapa.
       </p>
       <p>
-        O catálogo possui 24 atividades visuais e 72 rodadas. O plano libera 21
-        atividades além das três demonstrações gratuitas. As três atividades
-        demonstrativas continuam gratuitas. O cancelamento é feito em Minha
-        conta → Gerenciar assinatura e cancelamento. Ao cancelar a renovação,
-        você mantém acesso pelo período já pago. Falhas de pagamento podem
-        suspender o conteúdo de assinantes.
+        O acesso às atividades exige cadastro/login e assinatura ativa. A
+        biblioteca é organizada por animais, objetos e alimentos, em três níveis
+        de dificuldade. O proprietário pode atualizar o conteúdo. O cancelamento
+        é feito em Minha conta → Gerenciar assinatura e cancelamento. Ao
+        cancelar a renovação, você mantém acesso pelo período já pago. Falhas de
+        pagamento podem suspender o conteúdo de assinantes.
       </p>
       <p>
         O cancelamento da renovação não gera reembolso automático. Direitos
@@ -68,10 +69,10 @@ export default function Information() {
       </p>
       <h2>Instalação e conexão</h2>
       <p>
-        A trilha gratuita pode ser usada offline após o primeiro carregamento em
-        produção. Cadastro, pagamentos e acesso à trilha de assinantes precisam
-        de conexão. Informações da conta e respostas financeiras não são
-        guardadas no cache offline.
+        A apresentação pública pode ser visualizada offline após o primeiro
+        carregamento. Cadastro, pagamento e todas as atividades exigem conexão
+        para validar a assinatura. Informações da conta e respostas financeiras
+        não são guardadas no cache offline.
       </p>
       <Link className="back" href="/conta">
         Voltar à área dos responsáveis

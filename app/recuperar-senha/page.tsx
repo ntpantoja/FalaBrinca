@@ -44,7 +44,7 @@ export default function ResetPassword() {
   return (
     <main className="account-page">
       <Link className="brand" href="/">
-        🦕 FalaBrinca
+        FalaBrinca
       </Link>
       <section className="account-card">
         <h1>Nova senha</h1>
