@@ -1,97 +1,88 @@
 # FalaBrinca 🦕
 
-Primeira versão de um aplicativo educativo de linguagem para crianças de 3 a 5 anos, acompanhado por um adulto. **Não substitui avaliação ou terapia fonoaudiológica.**
+PWA educativa para crianças de 3 a 5 anos com acompanhamento de um adulto, feita em Next.js e TypeScript. **Não substitui avaliação ou terapia fonoaudiológica.**
 
-## O que funciona
+## Novidades desta versão
 
-- Interface responsiva com tema de dinossauros.
-- Identificação de três figuras: maçã, gato e bola. Uma resposta incorreta permite tentar novamente; cada acerto convida à fala sem avaliar pronúncia.
-- Leitura de palavras com a síntese de voz do navegador, quando disponível.
-- Recompensa de três estrelas por atividade concluída, salva apenas no navegador.
-- Manifesto e service worker para instalação e uso offline após o primeiro carregamento em produção. O áudio depende das vozes disponíveis no dispositivo.
-- Área de responsáveis com uma barreira simples de soma (não é autenticação).
-- Endpoint de checkout recorrente Stripe. Sem configuração, responde com indisponibilidade e não cobra.
+- Três atividades gratuitas: identificar figuras, associar objetos e montar frases, cada uma com três rodadas.
+- Voz do navegador, tentativas sem punição e estrelas locais.
+- Cadastro, confirmação de e-mail, login, saída e recuperação de senha de responsáveis via Supabase Auth.
+- Plano Exploradores do Dino: **R$ 50,00/mês**, com seis figuras adicionais disponíveis exclusivamente por uma API autenticada.
+- Checkout Stripe vinculado ao usuário, consulta de assinatura no servidor e portal para cancelamento/gerenciamento.
+- Webhook Stripe com assinatura verificada, processamento idempotente e armazenamento protegido por RLS.
+- PWA gratuita offline, sem cache de páginas da conta, tokens ou respostas financeiras.
 
-Associação de palavras e formação de frases estão sinalizadas como **em breve**.
+As integrações exigem configuração externa. Sem ela, as atividades gratuitas funcionam e a área de contas informa que está em preparação. Não há cadastro local fictício nem liberação de acesso por um parâmetro da URL.
 
-## Executar no computador, passo a passo
+## Executar no computador
 
-1. Instale o **Node.js 24 LTS** em https://nodejs.org e o Git em https://git-scm.com.
-2. Depois que estes arquivos estiverem publicados no GitHub, baixe o projeto:
+Instale Node.js 24 LTS e Git. No terminal:
 
-   ```bash
-   git clone https://github.com/ntpantoja/FalaBrinca.git
-   cd FalaBrinca
-   ```
+```bash
+git clone https://github.com/ntpantoja/FalaBrinca.git
+cd FalaBrinca
+npm ci
+npm run dev
+```
 
-   Se recebeu os arquivos por ZIP, extraia e abra um terminal na pasta que contém `package.json`.
+Abra `http://localhost:3000`. Para parar, Ctrl+C. Se já baixou anteriormente, use `git pull` e depois `npm ci`.
 
-3. Instale as dependências com as versões do arquivo de lock:
+Veja **[ATIVAR-CADASTRO-E-PAGAMENTOS.md](ATIVAR-CADASTRO-E-PAGAMENTOS.md)** para a ativação na Vercel.
 
-   ```bash
-   npm ci
-   ```
+## Testes
 
-4. Inicie o modo de desenvolvimento:
+```bash
+npm test
+npm run build
+npm run typecheck
+npx playwright install chromium
+npm run test:e2e
+npm run test:auth-ui
+```
 
-   ```bash
-   npm run dev
-   ```
+Os testes de navegador usam o build de produção em `localhost:3100` e dados fictícios do webhook. Não criam contas reais nem cobram cartões. Execute `npm run build` antes deles; o build deve estar sem configuração pública Supabase para os testes de indisponibilidade. Não use credenciais reais no ambiente de testes. Em máquinas com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` com seu caminho.
 
-5. Abra `http://localhost:3000` no navegador. Para parar, pressione Ctrl+C no terminal. Alterações nos arquivos aparecem automaticamente.
+`npm run test:auth-ui` faz um build separado com um endereço fictício de autenticação e testa cadastro, login, saída e pedido de recuperação com respostas simuladas, na porta 3101. Ao terminar, rode `npm run build` novamente com as configurações corretas antes de usar o aplicativo fora dos testes.
 
-Não é necessário configurar pagamentos para brincar.
+Cobertura: três atividades completas, tentativas incorretas, recompensas persistidas, apresentação do preço, indisponibilidade sem configuração, autenticação exigida nas APIs, rejeição de origem externa no checkout, webhook com assinatura inválida, resposta de reenvio quando não há banco e atividade offline sem cache da conta. Testes unitários validam valor, moeda, recorrência e estados com acesso premium.
 
-## Como testar
+**Os testes locais não comprovam integração com contas reais Supabase/Stripe.** Após configurar, execute o roteiro de ponta a ponta no guia antes de vender. O esquema SQL deve ser aplicado e validado no seu projeto Supabase.
+
+## PWA
 
 ```bash
 npm run build
-npm run typecheck
 npm start
 ```
 
-Pare o servidor de desenvolvimento antes de usar `npm start` na mesma porta. O build deve terminar sem erros. Abra `http://localhost:3000` e:
+Acesse a página inicial e espere o service worker ativar antes de testar offline. O service worker não registra em desenvolvimento. Ao publicar alterações, incremente o nome do cache em `public/sw.js`. No Android use “Instalar aplicativo”; no iPhone, Safari → Compartilhar → Adicionar à Tela de Início. Fora de localhost, HTTPS é obrigatório.
 
-1. Clique em “Começar a brincar”. Escolha uma figura incorreta: deve permitir outra tentativa.
-2. Ouça a palavra, se o navegador oferecer voz, e escolha a figura correta.
-3. Conclua as três rodadas. Deve receber exatamente três estrelas. Recarregue: elas devem permanecer.
-4. Abra a área dos adultos, responda 12 e clique em “Consultar assinatura”. Sem credenciais, deve informar indisponibilidade.
-5. No DevTools, simule um celular de 390 px de largura. Confira botões, texto e rolagem.
-6. Com `npm start` (produção), recarregue, espere o service worker ficar ativo em DevTools → Application → Service Workers, ative Offline e recarregue. A atividade deve continuar acessível; pagamentos precisam de internet.
+Cadastro, assinatura e trilha de assinantes precisam de conexão. A atividade premium já carregada pode terminar em memória, mas precisa validar acesso ao abri-la novamente. Não há DRM: conteúdo exibido pode ser copiado ou capturado pelo usuário.
 
-O service worker fica desativado em desenvolvimento. Após mudanças no código, atualize o nome do cache em `public/sw.js` antes de publicar uma nova versão. HTTPS é necessário fora de localhost. Abrir o IP do computador no celular por HTTP não permite testar a instalação PWA corretamente. No Android use o menu de instalação; no iPhone use Safari → Compartilhar → Adicionar à Tela de Início. A instalação e as vozes variam conforme o navegador.
+## Arquitetura
 
-## Assinatura mensal: integração inicial
+- `app/page.tsx`, `components/activity.tsx`, `lib/activities.ts`: trilhas educativas.
+- `app/conta/page.tsx`: cadastro/login, status e assinatura.
+- `app/recuperar-senha/page.tsx`: redefinição pelo link de e-mail.
+- `app/api/checkout`: exige usuário confirmado, origem correta, webhook configurado e preço exato de R$ 50 mensais; reutiliza sessão aberta e rejeita assinatura em andamento.
+- `app/api/account`: consulta o Stripe, não aceita status informado pelo cliente.
+- `app/api/portal`: abre o portal para o cliente associado ao usuário autenticado.
+- `app/api/activities/premium`: só entrega figuras extras após verificar assinatura ativa ou em teste no Stripe.
+- `app/api/webhooks/stripe`: verifica o corpo original com a assinatura Stripe e persiste eventos atomicamente. Responde com erro para permitir reenvio em falhas de persistência.
+- `supabase/schema.sql`: tabelas, RLS e função transacional restrita ao servidor.
+- `app/informacoes`: informações iniciais de uso e privacidade; requer identificação comercial e revisão antes da abertura de vendas.
 
-Foi escolhido Stripe Checkout para evitar capturar dados de cartão no aplicativo. Ainda **não é um sistema de assinaturas pronto para vendas**. Nesta versão, somente o fluxo de criação de uma sessão está preparado.
+A assinatura é consultada diretamente no Stripe para autorização. O banco guarda um resumo por assinatura e ignora eventos anteriores; eventos diferentes do mesmo segundo podem atualizar esse resumo na ordem de chegada, mas não determinam o acesso premium. Não altere o preço cadastrado sem planejar migração: o acesso é associado a `STRIPE_PRICE_ID`.
 
-Para testar, em uma conta Stripe no ambiente de teste:
+## Limites atuais
 
-1. Crie um produto e um preço **recorrente mensal**, em BRL. Copie o identificador `price_...`.
-2. Copie `.env.example` para `.env.local` (Windows: `copy .env.example .env.local`; macOS/Linux: `cp .env.example .env.local`).
-3. Preencha `STRIPE_SECRET_KEY` com a chave secreta de **teste**, `STRIPE_PRICE_ID` com o preço mensal de teste e mantenha `APP_URL=http://localhost:3000`.
-4. Reinicie o servidor. Entre na área de adultos e abra o checkout. Use somente os cartões de teste documentados pelo Stripe.
+- Estrelas não são sincronizadas na conta; ficam neste navegador e podem ser apagadas na área dos adultos.
+- Não há gravação de voz nem avaliação automática de pronúncia.
+- Não há painel administrativo, reembolso automatizado ou exclusão autônoma de conta. Cancelamento de renovação ocorre pelo portal Stripe; atendimento e solicitações de dados precisam de canal do responsável comercial antes do lançamento.
+- Configure SMTP próprio, limites de autenticação, proteção contra abuso e monitoramento no Supabase/Stripe antes de divulgação pública.
+- O portal deve ser configurado para cancelar ao fim do período, sem troca de plano nesta versão.
+- Não há limitação distribuída própria das rotas de cobrança. Configure regras de proteção/rate limit na hospedagem antes de abrir vendas em escala.
 
-Nunca publique `.env.local`, nunca use chaves secretas em variáveis `NEXT_PUBLIC_*` e nunca compartilhe chaves no chat. O valor não é fixado no código: o preço configurado no Stripe é o que será cobrado. A rota de retorno informa apenas que houve um retorno do checkout; **não comprova pagamento**.
+## Privacidade
 
-Antes de vender, implementar em uma tarefa posterior:
-
-- Contas e autenticação dos responsáveis, banco de dados e vínculo entre usuário e cliente Stripe.
-- Webhook com verificação de assinatura e processamento idempotente dos eventos de assinatura/fatura.
-- Autorização no servidor para conteúdo pago; tratamento de inadimplência e cancelamento.
-- Portal do assinante para gerenciamento e cancelamento, limites de requisições e proteção contra abuso do checkout.
-- Política de privacidade, termos, consentimentos e revisão dos requisitos aplicáveis à proteção de dados de crianças e às assinaturas.
-- Testes completos de checkout, renovação, falha de pagamento e cancelamento antes de habilitar chaves reais.
-
-A primeira atividade é gratuita e não há conteúdo pago desbloqueado nesta versão. Não há gravação de voz, análise de fala ou coleta de identificação da criança. As estrelas usam localStorage e podem ser apagadas na área de adultos. A voz usa o serviço disponibilizado pelo navegador/dispositivo.
-
-## Estrutura
-
-- `app/page.tsx`: telas e primeira atividade.
-- `app/globals.css`: aparência responsiva.
-- `app/api/checkout/route.ts`: criação da sessão Stripe no servidor.
-- `public/manifest.webmanifest`, `public/sw.js` e ícones: PWA.
-
-## Estado de publicação
-
-Criar os arquivos neste ambiente não os envia automaticamente ao GitHub e não publica um site. Depois de revisar, salve-os em um primeiro commit e envie a branch `main` pelo fluxo Git autorizado. Hospedagem Next.js e variáveis seguras do provedor serão necessárias para disponibilizar o aplicativo em HTTPS.
+A conta usa somente e-mail do responsável e autenticação Supabase. Identificadores e estado financeiro são guardados para gerenciar acesso. Cartões são processados pelo Stripe. A fala usa o recurso do navegador/dispositivo. Não envie dados da criança no cadastro. As chaves secretas ficam apenas no servidor; `.env.local` não entra no Git.
