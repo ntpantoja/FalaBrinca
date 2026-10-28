@@ -83,8 +83,6 @@ export default function Library({
   );
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
-  const [gate, setGate] = useState<"parents" | "settings" | null>(null);
-  const [answer, setAnswer] = useState("");
   const timing = useRef<Timing | null>(null);
   const queue = useRef<Adventure[]>([]);
   const gained = useRef(0);
@@ -395,10 +393,7 @@ export default function Library({
               </button>
               <button
                 className="kids-action outlined-action"
-                onClick={() => {
-                  setGate("parents");
-                  setAnswer("");
-                }}
+                onClick={() => navigate("parents")}
               >
                 <UsersRound size={23} />
                 Pais
@@ -415,10 +410,7 @@ export default function Library({
             </button>
             <button
               className="kids-action outlined-action"
-              onClick={() => {
-                setGate("settings");
-                setAnswer("");
-              }}
+              onClick={() => navigate("settings")}
             >
               <Settings size={23} />
               Configurações
@@ -577,45 +569,6 @@ export default function Library({
         <footer className="kids-footer">
           Educativo. Não substitui terapia fonoaudiológica.
         </footer>
-      )}
-      {gate && (
-        <div className="modal-backdrop">
-          <form
-            className="modal kids-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Área dos pais"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (answer.trim() === "12") {
-                navigate(gate);
-                setGate(null);
-              }
-            }}
-          >
-            <h2>Um momento para o adulto</h2>
-            <p>Quanto é 7 + 5?</p>
-            <label>
-              Resposta
-              <input
-                inputMode="numeric"
-                value={answer}
-                onChange={(e) => setAnswer(e.target.value)}
-                required
-                autoFocus
-              />
-            </label>
-            <button className="kids-action purple-action">Continuar</button>
-            {answer && answer !== "12" && <small>Confira a soma.</small>}
-            <button
-              type="button"
-              className="back"
-              onClick={() => setGate(null)}
-            >
-              Voltar
-            </button>
-          </form>
-        </div>
       )}
     </main>
   );

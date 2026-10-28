@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Volume2,
   Mic,
-  Heart,
   Star,
   Lock,
   Pause,
@@ -40,6 +39,7 @@ export function WordPractice({
 }: Props) {
   const [step, setStep] = useState(0);
   const [stage, setStage] = useState<"listen" | "select" | "success">("listen");
+  const [choices, setChoices] = useState<Choice[]>([]);
   const [feedback, setFeedback] = useState("");
   const [myTurn, setMyTurn] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -52,13 +52,18 @@ export function WordPractice({
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = "pt-BR";
+    const voices = window.speechSynthesis.getVoices();
+    const voice =
+      voices.find((v) => v.lang.toLowerCase() === "pt-br") ??
+      voices.find((v) => v.lang.toLowerCase().startsWith("pt"));
+    if (voice) utterance.voice = voice;
     utterance.rate = settings.rate;
     utterance.volume = settings.volume;
     window.speechSynthesis.speak(utterance);
   }
   useEffect(() => {
     speak(
-      `${round.answer}. Repita comigo: ${round.answer}. Quando quiser, toque na seta para escolher a figura.`,
+      `${round.answer}. Repita comigo: ${round.answer}. Depois, toque na seta para brincar.`,
     );
     return () => {
       if ("speechSynthesis" in window) window.speechSynthesis.cancel();
@@ -69,6 +74,18 @@ export function WordPractice({
     setStage("listen");
     setFeedback("");
     setMyTurn(false);
+  }
+  function beginSelection() {
+    const shuffled = [...round.choices];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    setChoices(shuffled);
+    setStage("select");
+    setFeedback("");
+    setMyTurn(false);
+    speak(`Onde está ${round.answer}? Toque no desenho.`);
   }
   function select(choice: Choice) {
     const correct = choice.name === round.answer;
@@ -141,22 +158,25 @@ export function WordPractice({
         <div className="word-selection">
           <h2 className="sr-only">Selecione {round.answer}</h2>
           <div className="selection-model">
-            <Picture choice={target} />
+            <span aria-hidden="true">👂</span>
             <button
               className="kids-icon-button"
               aria-label="Ouvir a palavra novamente"
               disabled={!sound}
-              onClick={() => speak(round.answer)}
+              onClick={() =>
+                speak(`Onde está ${round.answer}? Toque no desenho.`)
+              }
             >
               <Volume2 />
             </button>
           </div>
           <div className="word-choice-grid">
-            {round.choices.map((choice) => (
+            {choices.map((choice) => (
               <button
                 key={choice.name}
                 aria-label={choice.name}
                 onClick={() => select(choice)}
+                className="figure-answer"
               >
                 <Picture choice={choice} />
               </button>
@@ -198,7 +218,7 @@ export function WordPractice({
           }
         >
           <Volume2 size={29} />
-          <span>Ouvir</span>
+          <span className="sr-only">Ouvir</span>
         </button>
         <button
           className={`word-mic ${myTurn ? "my-turn" : ""}`}
@@ -220,11 +240,12 @@ export function WordPractice({
               : "Rever a figura"
           }
           onClick={() => {
-            setStage(stage === "listen" ? "select" : "listen");
-            setMyTurn(false);
-            speak(
-              stage === "listen" ? `Encontre ${round.answer}.` : round.answer,
-            );
+            if (stage === "listen") beginSelection();
+            else {
+              setStage("listen");
+              setMyTurn(false);
+              speak(round.answer);
+            }
           }}
         >
           <ArrowRight size={21} />
@@ -240,13 +261,20 @@ export function WordPractice({
       </p>
       <button
         className="kids-action learned-action"
-        disabled={stage !== "success"}
-        onClick={done}
+        disabled={stage === "select"}
+        onClick={stage === "success" ? done : beginSelection}
       >
-        <Heart size={23} />
-        {stage === "success"
-          ? "Pratiquei esta palavra! ✨"
-          : "Escolher a figura para continuar"}
+        {stage === "success" ? (
+          <Check size={32} aria-hidden="true" />
+        ) : (
+          <ArrowRight size={32} aria-hidden="true" />
+        )}
+        <span aria-hidden="true">{stage === "success" ? "⭐" : "👆"}</span>
+        <span className="sr-only">
+          {stage === "success"
+            ? "Pratiquei esta palavra! ✨"
+            : "Escolher a figura para continuar"}
+        </span>
       </button>
       <div className="word-footer">
         <button

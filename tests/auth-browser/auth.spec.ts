@@ -194,10 +194,15 @@ for (const activity of catalog)
       )
       .waitFor();
     for (const [index, round] of content[activity.id].rounds.entries()) {
-      if (activity.difficulty === "beginner")
+      if (activity.difficulty === "beginner") {
         await page
-          .getByRole("button", { name: "Ir para a seleção da figura" })
+          .getByRole("button", { name: "Escolher a figura para continuar" })
           .click();
+        await expect(page.locator(".selection-model")).toContainText("👂");
+        await expect(page.locator(".word-choice-grid button")).toHaveCount(
+          round.choices.length,
+        );
+      }
       const answers = round.words
         ? sequencePictures(round.words).map((piece) => piece.name.split(":")[1])
         : [round.answer];
@@ -494,6 +499,12 @@ test("painel de referência, metas, progresso, gráfico, exportação e configur
     await page
       .getByRole("button", { name: "Ir para a seleção da figura", exact: true })
       .click();
+    await expect(page.locator(".selection-model .activity-image")).toHaveCount(
+      0,
+    );
+    await expect(page.locator(".word-choice-grid button")).toHaveCount(
+      round.choices.length,
+    );
     if (index === 0)
       await page.getByRole("button", { name: "PÃO", exact: true }).click();
     await page.getByRole("button", { name: round.answer, exact: true }).click();
@@ -522,8 +533,6 @@ test("painel de referência, metas, progresso, gráfico, exportação e configur
   );
   await page.getByRole("button", { name: "Voltar", exact: true }).click();
   await page.getByRole("button", { name: "Pais", exact: true }).click();
-  await page.getByLabel("Resposta").fill("12");
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Painel dos Pais" }),
   ).toBeVisible();
@@ -543,8 +552,6 @@ test("painel de referência, metas, progresso, gráfico, exportação e configur
   await page
     .getByRole("button", { name: "Configurações", exact: true })
     .click();
-  await page.getByLabel("Resposta").fill("12");
-  await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await page.getByLabel("Mostrar legenda de apoio nas figuras").check();
   await page.getByLabel("Velocidade da voz").selectOption("0.6");
   await expect(page.getByLabel("Velocidade da voz")).toHaveValue("0.6");

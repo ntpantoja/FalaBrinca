@@ -48,7 +48,7 @@ Os dados ficam somente neste navegador, separados do perfil e da assinatura; nã
 
 ## Configurações
 
-É possível ativar/desativar áudio, ajustar volume, escolher velocidade da voz e ativar legenda de apoio. A área de conta e cancelamento continua acessível em **Configurações → Editar perfil e gerenciar assinatura** ou pelo Painel dos Pais. A soma de acesso à área dos pais é apenas um lembrete de acompanhamento; a autorização real usa a sessão e a assinatura no servidor.
+É possível ativar/desativar áudio, ajustar volume, escolher velocidade da voz e ativar legenda de apoio. A área de conta e cancelamento continua acessível em **Configurações → Editar perfil e gerenciar assinatura** ou pelo Painel dos Pais. Pais e Configurações abrem diretamente, sem desafio de matemática. A autorização usa a sessão e a assinatura no servidor.
 
 ## Verificação após publicar
 
@@ -62,3 +62,7 @@ Os dados ficam somente neste navegador, separados do perfil e da assinatura; nã
 8. Confira o painel master e a edição nas oito categorias.
 
 O aplicativo continua educativo e não substitui avaliação ou terapia fonoaudiológica. As vozes disponíveis dependem do navegador e do dispositivo. Cadastro, pagamento e atividades precisam de internet; páginas de autenticação e dados privados não ficam no cache offline.
+
+## Ouvir e selecionar desenhos
+
+As atividades iniciais das oito categorias apresentam uma figura e sua pronúncia. Toque no alto-falante para repetir o áudio e na seta grande para escolher entre desenhos. Nesta etapa, a figura-modelo desaparece e as alternativas mudam de posição. O pedido é falado em português; não é necessário ler. Depois do acerto, o botão com marca de confirmação e estrela avança para a próxima figura. A voz usa a síntese de fala do dispositivo, com preferência por português brasileiro.

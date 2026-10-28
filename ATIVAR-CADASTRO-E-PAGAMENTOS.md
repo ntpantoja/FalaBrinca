@@ -56,7 +56,7 @@ Para testar localmente, copie `.env.example` para `.env.local`, preencha com os 
 
 ## 4. Testar o caminho completo
 
-1. No app, abra **Área dos adultos**, responda a soma e clique em **Criar conta ou entrar**.
+1. Abra o app e faça seu cadastro ou entre na conta existente. O formulário fica na tela inicial.
 2. Cadastre um **e-mail do responsável** com senha de pelo menos 8 caracteres e leia as informações de uso. Criar conta não cobra nada.
 3. Abra o e-mail e confirme o cadastro. O app deve voltar conectado e pedir seu nome, o primeiro nome da criança e a autorização. Preencha e salve. Se o link estiver expirado, use o reenvio de confirmação.
 4. Confira “Sem assinatura” e **R$ 50,00/mês**. Clique em **Assinar por R$ 50,00/mês**.
