@@ -1,4 +1,4 @@
-const CACHE = "falabrinca-v2";
+const CACHE = "falabrinca-v3";
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -28,6 +28,7 @@ self.addEventListener("fetch", (event) => {
   // Contas, tokens, checkout e conteúdo de assinantes nunca entram no cache.
   if (
     url.pathname.startsWith("/api/") ||
+    url.pathname.startsWith("/auth/") ||
     url.pathname.startsWith("/conta") ||
     url.pathname.startsWith("/recuperar-senha") ||
     url.search ||

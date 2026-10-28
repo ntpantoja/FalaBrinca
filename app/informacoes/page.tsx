@@ -24,9 +24,13 @@ export default function Information() {
       <h2>Conta do responsável</h2>
       <p>
         O cadastro é exclusivo para maiores de 18 anos. E-mail e credenciais de
-        autenticação são tratados pelo Supabase. Não pedimos nome, data de
-        nascimento ou gravações de voz da criança. Não use o e-mail da criança
-        no cadastro.
+        autenticação são tratados pelo Supabase. Após confirmar o acesso,
+        pedimos o nome do responsável e somente o primeiro nome da criança para
+        personalizar as boas-vindas, mediante autorização explícita do
+        responsável legal. Não pedimos sobrenome, data de nascimento, foto ou
+        gravação de voz da criança. Não use o e-mail da criança no cadastro. O
+        acesso com Google usa a conta do adulto. Você pode editar ou apagar os
+        nomes na área da conta.
       </p>
       <h2>Mensalidade e cancelamento</h2>
       <p>
@@ -36,7 +40,8 @@ export default function Information() {
         nessa etapa.
       </p>
       <p>
-        O plano inclui uma trilha com seis figuras extras. As três atividades
+        O catálogo possui 24 atividades visuais e 72 rodadas. O plano libera 21
+        atividades além das três demonstrações gratuitas. As três atividades
         demonstrativas continuam gratuitas. O cancelamento é feito em Minha
         conta → Gerenciar assinatura e cancelamento. Ao cancelar a renovação,
         você mantém acesso pelo período já pago. Falhas de pagamento podem
@@ -49,10 +54,10 @@ export default function Information() {
       </p>
       <h2>Dados e armazenamento</h2>
       <p>
-        As estrelas ficam apenas neste navegador, não são sincronizadas com a
-        conta e podem ser apagadas na área dos adultos ou ao limpar os dados do
-        site. A sessão de login é mantida no navegador até sair ou expirar. Não
-        compartilhe o dispositivo com sua conta aberta.
+        Estrelas, histórico e favoritos ficam apenas neste navegador, não são
+        sincronizados com a conta e podem ser apagadas na área dos adultos ou ao
+        limpar os dados do site. A sessão de login é mantida no navegador até
+        sair ou expirar. Não compartilhe o dispositivo com sua conta aberta.
       </p>
       <p>
         O Stripe processa o pagamento; os dados de cartão não passam pelo

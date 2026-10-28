@@ -1,3 +1,5 @@
+> **Já configurou os serviços?** Para esta versão, faça também os passos de [ATUALIZAR-GOOGLE-E-PERFIL.md](ATUALIZAR-GOOGLE-E-PERFIL.md), incluindo tabela de perfis, retorno de confirmação e Google.
+
 # Como ativar cadastro e mensalidade de R$ 50,00
 
 O código está preparado, mas você precisa criar e configurar seus serviços. **Comece em modo de teste: nenhum cartão real deve ser cobrado nesta etapa.** Nunca envie chaves secretas pelo chat nem cole no GitHub.
@@ -9,7 +11,7 @@ O código está preparado, mas você precisa criar e configurar seus serviços. 
 3. Em **Autenticação → Provedores**, habilite login por **E-mail**, mantendo **confirmar e-mail** habilitado. Configure o comprimento mínimo da senha como 8 ou mais.
 4. Em **Autenticação → Configuração de URL**, use:
    - URL do site: `https://falabrinca-43kf.vercel.app`
-   - URLs de redirecionamento permitidas: `https://falabrinca-43kf.vercel.app/conta` e `https://falabrinca-43kf.vercel.app/recuperar-senha`.
+   - URLs de redirecionamento permitidas: `https://falabrinca-43kf.vercel.app/conta` e `https://falabrinca-43kf.vercel.app/recuperar-senha`, além de `https://falabrinca-43kf.vercel.app/auth/continuar`.
    - Para desenvolvimento local, adicione também `http://localhost:3000/conta` e `http://localhost:3000/recuperar-senha`.
 5. Em **Configurações do projeto → API** (ou **Chaves de API**), localize a URL do projeto, a chave pública `anon` e a chave secreta de servidor `service_role` nas chaves legadas. A chave `service_role` nunca pode aparecer no navegador ou em uma variável com prefixo `NEXT_PUBLIC_`.
 6. Antes de abrir cadastros ao público, configure **SMTP próprio** em Autenticação para envio de confirmação e recuperação de senha. O serviço de e-mail de teste do Supabase possui limites e restrições de destinatário. Ative as proteções de autenticação disponíveis e confira os limites de envio.
@@ -54,11 +56,11 @@ Para testar localmente, copie `.env.example` para `.env.local`, preencha com os 
 
 1. No app, abra **Área dos adultos**, responda a soma e clique em **Criar conta ou entrar**.
 2. Cadastre um **e-mail do responsável** com senha de pelo menos 8 caracteres e leia as informações de uso. Criar conta não cobra nada.
-3. Abra o e-mail e confirme o cadastro. Se necessário, volte ao app e clique em **Já tenho conta → Entrar**.
+3. Abra o e-mail e confirme o cadastro. O app deve voltar conectado e pedir seu nome, o primeiro nome da criança e a autorização. Preencha e salve. Se o link estiver expirado, use o reenvio de confirmação.
 4. Confira “Sem assinatura” e **R$ 50,00/mês**. Clique em **Assinar por R$ 50,00/mês**.
 5. No checkout de teste, confirme o preço e utilize um cartão de teste autorizado pela documentação do Stripe — por exemplo, `4242 4242 4242 4242`, data futura e CVC de teste. Nunca use cartão real no ambiente de teste.
 6. Ao retornar, clique em **Atualizar status**. O acesso só será liberado se o servidor consultar uma assinatura ativa no Stripe. O endereço `?checkout=success` por si só não libera nada.
-7. Abra **Explorar a trilha de assinantes** e conclua as seis figuras. Saia da conta e tente abrir novamente: deve exigir login.
+7. Abra **Explorar a trilha de assinantes** e escolha e conclua uma das 21 atividades de assinantes. Saia da conta e tente abrir novamente: deve exigir login.
 8. Em **Gerenciar assinatura e cancelamento**, cancele a renovação. Volte e atualize o status: deverá indicar acesso até o fim do período pago.
 9. No Stripe, confira que os eventos foram entregues ao webhook com resposta **200**. Use **Reenviar** para verificar que o mesmo evento não duplica registros. Confira no Supabase o cliente e o resumo da assinatura.
 10. Teste **Esqueci minha senha**, receba o e-mail, defina uma senha nova e confirme novo login.
@@ -79,4 +81,4 @@ Depois de concluir os testes e a preparação comercial:
 4. Substitua na Vercel somente as credenciais Stripe pelo conjunto real correspondente (chave, preço e segredo de webhook).
 5. Reimplante e confira o preço apresentado no checkout antes da divulgação.
 
-Não há sincronização de estrelas entre dispositivos nesta versão. Cancelar a renovação é diferente de reembolsar uma compra: reembolsos são administrados pelo responsável no Stripe, respeitando os direitos aplicáveis.
+Não há sincronização de estrelas, favoritos ou histórico entre dispositivos nesta versão. Cancelar a renovação é diferente de reembolsar uma compra: reembolsos são administrados pelo responsável no Stripe, respeitando os direitos aplicáveis.
