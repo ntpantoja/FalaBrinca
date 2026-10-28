@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { catalog, type ActivityContent } from "../../lib/catalog";
+import { categories } from "../../lib/content-validation";
 import { sequencePictures } from "../../lib/pictures";
 const user = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -75,12 +76,12 @@ test("e-mail confirmado leva ao perfil, sem novo login; nomes, pagamento e saíd
       json: { error: "Pagamento de teste indisponível." },
     }),
   );
-  await page.goto("/conta");
+  await page.goto("/");
   await page.screenshot({
     path: "/tmp/falabrinca-novo-cadastro.png",
     fullPage: true,
   });
-  await page.getByLabel("E-mail do responsável").fill(user.email);
+  await page.getByLabel("E-mail", { exact: true }).fill(user.email);
   await page.getByLabel(/^Senha/).fill("SenhaTeste123!");
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Criar minha conta" }).click();
@@ -91,29 +92,21 @@ test("e-mail confirmado leva ao perfil, sem novo login; nomes, pagamento e saíd
     "primeiro nome da criança",
   );
   await loginCallback(page);
-  await expect(
-    page.getByLabel("Nome do responsável", { exact: true }),
-  ).toBeVisible();
-  await expect(page.getByLabel("E-mail do responsável")).toHaveCount(0);
+  await expect(page.getByLabel("Seu nome", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("E-mail", { exact: true })).toHaveCount(0);
+  await page.getByLabel("Seu nome", { exact: true }).fill("Ana Maria");
   await page
-    .getByLabel("Nome do responsável", { exact: true })
-    .fill("Ana Maria");
-  await page
-    .getByLabel("Primeiro nome da criança", { exact: false })
+    .getByRole("textbox", { name: /^Primeiro nome da criança/ })
     .fill("Bia");
   await page.getByRole("checkbox").check();
-  await page
-    .getByRole("button", { name: "Salvar e começar a explorar" })
-    .click();
-  await expect(
-    page.getByRole("heading", { name: "O cantinho de Bia" }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Continuar para assinatura" }).click();
+  await expect(page.getByRole("heading", { name: "Olá, Ana!" })).toBeVisible();
   await page.getByRole("button", { name: "Assinar por R$ 50,00/mês" }).click();
   await expect(page.getByRole("status")).toContainText(
     "Pagamento de teste indisponível",
   );
   await page.getByRole("button", { name: "Sair da conta" }).click();
-  await expect(page.getByLabel("E-mail do responsável")).toBeVisible();
+  await expect(page.getByLabel("E-mail", { exact: true })).toBeVisible();
 });
 test("Google encaminha ao provedor com retorno para o cadastro — autorização não é simulada como login real", async ({
   page,
@@ -140,7 +133,7 @@ test("recuperação mantém mensagem sem revelar se conta existe", async ({
     .getByRole("button", { name: "Já tenho conta", exact: true })
     .click();
   await page.getByRole("button", { name: "Esqueci minha senha" }).click();
-  await page.getByLabel("E-mail do responsável").fill(user.email);
+  await page.getByLabel("E-mail", { exact: true }).fill(user.email);
   await page.getByRole("button", { name: "Enviar instruções" }).click();
   await expect(page.getByRole("status")).toContainText("Se houver uma conta");
 });
@@ -176,6 +169,12 @@ for (const activity of catalog)
       r.fulfill({ json: { activities: catalog, role: "subscriber" } }),
     );
     await page.goto("/atividades");
+    await page
+      .getByRole("button", { name: "Começar Atividade", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: categories[activity.category], exact: true })
+      .click();
     if (activity.difficulty !== "beginner")
       await page
         .getByRole("button", {
@@ -189,7 +188,11 @@ for (const activity of catalog)
     await page
       .getByRole("button", { name: `Jogar ${activity.title}`, exact: true })
       .click();
-    await page.locator(".picture-prompt").waitFor();
+    await page
+      .locator(
+        activity.kind === "figures" ? ".word-hero-card" : ".picture-prompt",
+      )
+      .waitFor();
     for (const [index, round] of content[activity.id].rounds.entries()) {
       if (activity.difficulty === "beginner")
         await page
@@ -202,7 +205,12 @@ for (const activity of catalog)
         await page.getByRole("button", { name, exact: true }).click();
       await page
         .getByRole("button", {
-          name: index === 2 ? "Ganhar minhas estrelas" : "Próxima descoberta",
+          name:
+            activity.kind === "figures"
+              ? "Pratiquei esta palavra!"
+              : index === 2
+                ? "Ganhar minhas estrelas"
+                : "Próxima descoberta",
         })
         .click();
     }
@@ -391,4 +399,181 @@ test("painel master cria, edita e apaga card pela interface — banco simulado",
       exact: true,
     }),
   ).toHaveCount(0);
+});
+
+async function paidApp(page: Page) {
+  await authMock(page);
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    session,
+  );
+  await page.route("**/api/profile", (r) =>
+    r.fulfill({
+      json: {
+        profile: {
+          guardian_name: "Ana",
+          child_first_name: "Bia",
+          consent_version: "2026-10-28",
+        },
+      },
+    }),
+  );
+  await page.route("**/api/library", (r) =>
+    r.fulfill({ json: { activities: catalog, role: "subscriber" } }),
+  );
+  await page.route("**/api/activities/*", (route) => {
+    const id = new URL(route.request().url()).pathname.split("/").pop()!;
+    return route.fulfill({ json: content[id] });
+  });
+}
+test("pagamento confirmado encaminha automaticamente ao painel — checkout e serviços simulados", async ({
+  page,
+}) => {
+  await paidApp(page);
+  let active = false;
+  await page.route("**/api/account", (r) =>
+    r.fulfill({
+      json: { active, status: active ? "active" : "none", canManage: active },
+    }),
+  );
+  await page.route("**/api/checkout", (r) => {
+    active = true;
+    return r.fulfill({
+      json: { url: "http://localhost:3101/conta?checkout=success" },
+    });
+  });
+  await page.goto("/conta");
+  await page.getByRole("button", { name: "Assinar por R$ 50,00/mês" }).click();
+  await page.waitForURL("**/atividades");
+  await expect(
+    page.getByRole("button", { name: "Começar Atividade", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Olá, Bia!" })).toBeVisible();
+});
+test("painel de referência, metas, progresso, gráfico, exportação e configurações usam prática real", async ({
+  page,
+}) => {
+  await paidApp(page);
+  await page.goto("/atividades");
+  await expect(page.getByRole("heading", { name: "Olá, Bia!" })).toBeVisible();
+  await page.screenshot({
+    path: "/tmp/falabrinca-referencia-inicio.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Progresso", exact: true }).click();
+  await page.getByRole("button", { name: "Adicionar meta" }).click();
+  await page.getByLabel("Recompensa combinada").fill("Desenhar juntos");
+  await page.getByLabel("Estrelas a partir de agora").fill("1");
+  await page.getByRole("button", { name: "Criar meta", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Continue praticando, sem pressa" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Começar Atividade", exact: true })
+    .click();
+  await expect(page.locator(".kids-category")).toHaveCount(8);
+  await page.screenshot({
+    path: "/tmp/falabrinca-referencia-categorias.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Alimentos", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Jogar ${catalog[0].title}`, exact: true })
+    .click();
+  await page.locator(".word-hero-card").waitFor();
+  await page.screenshot({
+    path: "/tmp/falabrinca-referencia-palavra.png",
+    fullPage: true,
+  });
+  await page
+    .getByRole("button", { name: "Minha vez de repetir, sem gravação" })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Não gravamos");
+  for (const [index, round] of content[catalog[0].id].rounds.entries()) {
+    await page
+      .getByRole("button", { name: "Ir para a seleção da figura", exact: true })
+      .click();
+    if (index === 0)
+      await page.getByRole("button", { name: "PÃO", exact: true }).click();
+    await page.getByRole("button", { name: round.answer, exact: true }).click();
+    await page.getByRole("button", { name: "Pratiquei esta palavra!" }).click();
+  }
+  await page
+    .getByRole("button", { name: "Voltar ao início", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Progresso", exact: true }).click();
+  await expect(page.locator(".percentage-ring")).toContainText("75%");
+  await expect(page.locator(".progress-stats-grid")).toContainText("3");
+  await page
+    .getByRole("button", { name: "Resgatar recompensa", exact: true })
+    .click();
+  await expect(page.locator(".goal-item")).toContainText(
+    "Recompensa resgatada!",
+  );
+  await page.screenshot({
+    path: "/tmp/falabrinca-referencia-progresso.png",
+    fullPage: true,
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "Progresso", exact: true }).click();
+  await expect(page.locator(".goal-item")).toContainText(
+    "Recompensa resgatada!",
+  );
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page.getByRole("button", { name: "Pais", exact: true }).click();
+  await page.getByLabel("Resposta").fill("12");
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Painel dos Pais" }),
+  ).toBeVisible();
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Exportar histórico" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/falabrinca-pratica-.*json/);
+  await expect(page.locator(".weekly-chart svg")).toHaveAttribute(
+    "aria-label",
+    /3 palavras/,
+  );
+  await page.screenshot({
+    path: "/tmp/falabrinca-referencia-pais.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Configurações", exact: true })
+    .click();
+  await page.getByLabel("Resposta").fill("12");
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page.getByLabel("Mostrar legenda de apoio nas figuras").check();
+  await page.getByLabel("Velocidade da voz").selectOption("0.6");
+  await expect(page.getByLabel("Velocidade da voz")).toHaveValue("0.6");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+test("imagem indisponível mostra desenho alternativo e não quebra a atividade", async ({
+  page,
+}) => {
+  await paidApp(page);
+  const broken = structuredClone(content[catalog[0].id]);
+  broken.rounds[0].choices.find(
+    (c) => c.name === broken.rounds[0].answer,
+  )!.image_url = "https://media.example.test/missing.png";
+  await page.route(`**/api/activities/${catalog[0].id}`, (r) =>
+    r.fulfill({ json: broken }),
+  );
+  await page.route("https://media.example.test/**", (route) => route.abort());
+  await page.goto("/atividades");
+  await page
+    .getByRole("button", { name: "Começar Atividade", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Alimentos", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Jogar ${catalog[0].title}`, exact: true })
+    .click();
+  await expect(page.locator(".word-hero-card")).toContainText("🍎");
+  await expect(page.locator(".word-hero-card img")).toHaveCount(0);
 });

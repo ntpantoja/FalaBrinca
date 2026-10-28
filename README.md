@@ -4,12 +4,12 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 
 ## Fluxo atual
 
-- `/`: apresentação do aplicativo e do plano de **R$ 50,00/mês**, com cadastro/login. Não oferece demonstração de jogos.
+- `/`: cadastro/login direto com Google ou e-mail, perfil e assinatura de **R$ 50,00/mês** na mesma área. Após confirmação do acesso, abre o painel de prática.
 - `/conta`: cadastro, Google, confirmação por e-mail, perfil familiar e assinatura.
 - `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa.
 - `/admin`: painel exclusivo da conta master, com criação, edição, prévia, publicação, ocultação, exclusão e upload de ilustrações.
 
-As categorias são **Animais, Objetos e Alimentos**. Dificuldades:
+As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. O material de importação inclui 27 atividades e 81 rodadas. Dificuldades:
 
 1. **Inicial**: imagem e áudio da palavra → convite à repetição → seleção da figura.
 2. **Intermediário**: associações de imagens com instruções faladas.
@@ -19,11 +19,12 @@ Não há leitura obrigatória nos jogos. Não gravamos voz e não verificamos a 
 
 ## Configurar os serviços
 
+- **[Atualizar para o painel das referências](ATUALIZAR-PAINEL-VISUAL.md)** — categorias novas, progresso, metas, gráfico e acesso direto.
 - [Cadastro e pagamentos](ATIVAR-CADASTRO-E-PAGAMENTOS.md).
 - [Google e perfil familiar](ATUALIZAR-GOOGLE-E-PERFIL.md).
 - **[Ativar a conta master e importar a biblioteca](ATIVAR-ACESSO-MASTER.md)** — necessário nesta atualização.
 
-Para uma instalação nova, execute `supabase/schema.sql`. Para a atualização de uma instalação já existente, execute `supabase/master-content-migration.sql`, configure `MASTER_USER_ID` e importe as 24 atividades no painel. A biblioteca fica no banco, não é recriada nem sobrescrita ao reiniciar. Sem configuração ou sem assinatura, o sistema não libera jogos por fallback.
+Para uma instalação nova, execute `supabase/schema.sql`. Para a atualização de uma instalação já existente, execute `supabase/master-content-migration.sql`, configure `MASTER_USER_ID` e importe as atividades no painel. A biblioteca fica no banco, não é recriada nem sobrescrita ao reiniciar. Sem configuração ou sem assinatura, o sistema não libera jogos por fallback.
 
 ## Executar
 
@@ -52,11 +53,11 @@ npm run test:e2e
 npm run test:auth-ui
 ```
 
-`test:e2e` verifica apresentação do plano, ausência de demonstração, autenticação obrigatória, proteção do painel, webhook e exclusão das páginas privadas do cache. Precisa de build sem configuração Supabase pública.
+`test:e2e` verifica entrada direta no cadastro, plano e ausência de demonstração, autenticação obrigatória, proteção do painel, webhook e exclusão das páginas privadas do cache. Precisa de build sem configuração Supabase pública.
 
-`test:auth-ui` faz um build com serviço Supabase local **simulado**, testa confirmação, Google, os 24 jogos e permissões/CRUD do master. Não usa um banco Supabase real nem cobra cartões. O provedor em `tests/mock-supabase.mjs` é uma fixture de teste e nunca deve ser usado como backend real. Depois dessa suíte, execute `npm run build` com as configurações corretas para remover o build fictício. Em ambientes com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
+`test:auth-ui` faz um build com serviço Supabase local **simulado**, testa confirmação, Google, os 27 jogos e permissões/CRUD do master. Não usa um banco Supabase real nem cobra cartões. O provedor em `tests/mock-supabase.mjs` é uma fixture de teste e nunca deve ser usado como backend real. Depois dessa suíte, execute `npm run build` com as configurações corretas para remover o build fictício. Em ambientes com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
 
-Os testes de permissão verificam que metadados `role: master` no usuário comum não concedem acesso administrativo; o ID configurado e o usuário verificado no servidor são a autoridade. Os testes de edição incluem conflitos de versão e exclusão. Validações de conteúdo cobrem categorias, níveis, respostas e imagens.
+Os testes de permissão verificam que metadados `role: master` no usuário comum não concedem acesso administrativo; o ID configurado e o usuário verificado no servidor são a autoridade. Os testes de edição incluem conflitos de versão e exclusão. Os painéis têm testes de fluxo de pagamento, dados de seleção, metas, persistência, exportação e configurações. Validações de conteúdo cobrem categorias, níveis, respostas e imagens.
 
 **Validação local simulada não comprova a configuração real de Supabase, Google, Storage ou Stripe.** Execute a migração e o roteiro manual do guia na sua conta antes de usar comercialmente.
 
@@ -77,7 +78,7 @@ Não altere o identificador do preço Stripe sem planejar migração dos assinan
 
 ## PWA e privacidade
 
-O aplicativo continua instalável em HTTPS. Somente a apresentação pública tem suporte offline. **Biblioteca, conta, painel master, APIs e callbacks não entram no cache**; atividades exigem conexão para validar o acesso. Uma rodada já carregada pode continuar em memória, mas cada nova abertura consulta o servidor. Conteúdo exibido pode ser capturado; não há DRM.
+O aplicativo continua instalável em HTTPS. Cadastro, pagamento e prática precisam de internet. **Biblioteca, conta, painel master, APIs e callbacks não entram no cache**; atividades exigem conexão para validar o acesso. Uma rodada já carregada pode continuar em memória, mas cada nova abertura consulta o servidor. Conteúdo exibido pode ser capturado; não há DRM.
 
 O primeiro nome da criança e o nome do responsável ficam no perfil autenticado, não no cache offline. Cartões são processados pelo Stripe. A voz usa recursos do navegador/dispositivo. As ilustrações da biblioteca ficam em um bucket público e não devem conter dados pessoais.
 

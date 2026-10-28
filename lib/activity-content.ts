@@ -49,6 +49,21 @@ function phrases(id: string, items: [string, string[]][]): ActivityContent {
 }
 const c = (name: string, emoji: string): Choice => ({ name, emoji });
 const extra: ActivityContent[] = [
+  figures("sentimentos-iniciais", [
+    ["FELIZ", "😊", "Uma carinha que pode mostrar alegria."],
+    ["TRISTE", "😢", "Uma carinha que pode mostrar tristeza."],
+    ["BRAVO", "😠", "Uma carinha que pode mostrar raiva."],
+  ]),
+  figures("cores", [
+    ["VERMELHO", "🟥", "Uma cor que pode aparecer na maçã."],
+    ["AZUL", "🟦", "Uma cor que pode aparecer no céu."],
+    ["AMARELO", "🟨", "Uma cor que pode aparecer no sol."],
+  ]),
+  figures("acoes", [
+    ["CORRER", "🏃", "Mover o corpo com passos rápidos."],
+    ["DORMIR", "😴", "Descansar quando chega o sono."],
+    ["COMER", "😋", "Saborear um alimento."],
+  ]),
   figures("frutas", [
     ["BANANA", "🍌", "Amarelinha e fácil de descascar."],
     ["UVA", "🍇", "Pequenininha, nasce em cachos."],

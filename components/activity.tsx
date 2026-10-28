@@ -9,12 +9,18 @@ export function Activity({
   sound,
   onExit,
   onComplete,
+  onAttempt,
+  onPause,
+  voiceSettings,
 }: {
   adventure: Adventure;
   content: ActivityContent;
   sound: boolean;
   onExit: () => void;
   onComplete: (stars: number) => void;
+  onAttempt?: (word: string, correct: boolean) => void;
+  onPause?: (value: boolean) => void;
+  voiceSettings?: { rate: number; volume: number };
 }) {
   const [step, setStep] = useState(0);
   const [correct, setCorrect] = useState(false);
@@ -39,7 +45,8 @@ export function Activity({
     window.speechSynthesis.cancel();
     const voice = new SpeechSynthesisUtterance(text);
     voice.lang = "pt-BR";
-    voice.rate = 0.8;
+    voice.rate = voiceSettings?.rate ?? 0.8;
+    voice.volume = voiceSettings?.volume ?? 1;
     window.speechSynthesis.speak(voice);
   }
   useEffect(() => {
@@ -56,6 +63,10 @@ export function Activity({
   }, [step, sound]);
   function choose(name: string) {
     if (correct || paused) return;
+    onAttempt?.(
+      round.answer,
+      sentence ? name === sequence[words.length].name : name === round.answer,
+    );
     if (sentence) {
       if (name !== sequence[words.length].name) {
         setFeedback("Vamos tentar outra figura.");
@@ -128,6 +139,7 @@ export function Activity({
           aria-label="Fazer uma pausa"
           onClick={() => {
             setPaused(true);
+            onPause?.(true);
             speak("Uma pausa faz bem.");
           }}
         >
@@ -175,7 +187,7 @@ export function Activity({
               key={piece.name}
               className={words[i] ? "sequence-slot filled" : "sequence-slot"}
               aria-label={
-                words[i] ? piece.name.split(":")[1] : `Espaço ${i + 1}`
+                words[i] ? piece.name.split(":").pop() : `Espaço ${i + 1}`
               }
             >
               <span>{words[i] || hint ? <Picture choice={piece} /> : "?"}</span>
@@ -210,7 +222,7 @@ export function Activity({
           {choices.map((choice) => (
             <button
               key={choice.name}
-              aria-label={sentence ? choice.name.split(":")[1] : choice.name}
+              aria-label={sentence ? choice.name.split(":").pop() : choice.name}
               disabled={correct || words.includes(choice.name) || paused}
               onClick={() => choose(choice.name)}
               className={
@@ -289,7 +301,10 @@ export function Activity({
               className="primary picture-next"
               aria-label="Continuar a aventura"
               autoFocus
-              onClick={() => setPaused(false)}
+              onClick={() => {
+                setPaused(false);
+                onPause?.(false);
+              }}
             >
               ▶
             </button>

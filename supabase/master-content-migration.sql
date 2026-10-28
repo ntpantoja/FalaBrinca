@@ -6,7 +6,7 @@ create table if not exists public.learning_activities (
  emoji text not null,
  color text not null default 'mint' check(color in ('mint','peach','lavender','sky','butter')),
  kind text not null check(kind in ('figures','association','sentence')),
- category text not null check(category in ('animals','objects','foods')),
+ category text not null check(category in ('animals','objects','foods','colors','emotions','transports','actions','nature')),
  difficulty text not null check(difficulty in ('beginner','intermediate','advanced')),
  minutes integer not null default 3,
  published boolean not null default false,

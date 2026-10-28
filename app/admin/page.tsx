@@ -215,7 +215,7 @@ export default function Admin() {
   async function seed() {
     if (
       !window.confirm(
-        "Importar as 24 atividades iniciais? As atividades existentes não serão sobrescritas. Atividades iniciais que você apagou serão recriadas.",
+        "Importar as atividades iniciais? As atividades existentes não serão sobrescritas. Atividades iniciais que você apagou serão recriadas.",
       )
     )
       return;
@@ -634,7 +634,7 @@ export default function Admin() {
                 disabled={busy}
                 onClick={() => void seed()}
               >
-                Importar 24 atividades iniciais
+                Importar atividades iniciais
               </button>
             </div>
             <div className="admin-summary">

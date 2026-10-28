@@ -55,10 +55,11 @@ export default function Information() {
       </p>
       <h2>Dados e armazenamento</h2>
       <p>
-        Estrelas, histórico e favoritos ficam apenas neste navegador, não são
-        sincronizados com a conta e podem ser apagadas na área dos adultos ou ao
-        limpar os dados do site. A sessão de login é mantida no navegador até
-        sair ou expirar. Não compartilhe o dispositivo com sua conta aberta.
+        Estrelas, palavras praticadas, seleções, tempo ativo, sessões, metas e
+        favoritos ficam apenas neste navegador, não são sincronizados com a
+        conta e podem ser apagadas na área dos adultos ou ao limpar os dados do
+        site. A sessão de login é mantida no navegador até sair ou expirar. Não
+        compartilhe o dispositivo com sua conta aberta.
       </p>
       <p>
         O Stripe processa o pagamento; os dados de cartão não passam pelo
@@ -69,10 +70,10 @@ export default function Information() {
       </p>
       <h2>Instalação e conexão</h2>
       <p>
-        A apresentação pública pode ser visualizada offline após o primeiro
-        carregamento. Cadastro, pagamento e todas as atividades exigem conexão
-        para validar a assinatura. Informações da conta e respostas financeiras
-        não são guardadas no cache offline.
+        Cadastro, pagamento e todas as atividades exigem conexão para validar a
+        assinatura. As páginas de cadastro e os dados privados não são
+        armazenados no cache offline. Informações da conta e respostas
+        financeiras não são guardadas no cache offline.
       </p>
       <Link className="back" href="/conta">
         Voltar à área dos responsáveis

@@ -1,37 +1,23 @@
 import { test, expect } from "@playwright/test";
 import Stripe from "stripe";
-test("tela inicial apresenta plano, cadastro e login sem teste ou mascote", async ({
+test("o link abre direto o cadastro e a assinatura, sem apresentação ou acesso a jogos", async ({
   page,
 }) => {
   await page.goto("/");
+  await expect(page.locator(".auth-entry")).toBeVisible();
+  await expect(page.locator(".entry-plan .price")).toContainText("R$ 50,00");
+  await expect(page.locator(".marketing-main")).toHaveCount(0);
   await expect(
-    page.getByRole("heading", { name: /Pequenas palavras/ }),
-  ).toBeVisible();
-  await expect(page.locator(".hero-price")).toContainText("R$ 50,00");
-  await expect(
-    page.getByRole("link", { name: "Entrar", exact: true }),
-  ).toHaveAttribute("href", "/conta?modo=login");
-  await expect(
-    page.getByRole("link", { name: "Criar minha conta" }),
-  ).toHaveAttribute("href", "/conta?modo=cadastro");
-  await expect(
-    page.getByRole("button", { name: "Começar a brincar" }),
+    page.getByRole("button", { name: "Começar Atividade" }),
   ).toHaveCount(0);
-  await expect(page.locator(".adventure-card")).toHaveCount(0);
   await expect(page.locator(".dino-illustration")).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.screenshot({
-    path: "/tmp/falabrinca-assinatura-mobile.png",
-    fullPage: true,
-  });
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.screenshot({ path: "/tmp/falabrinca-assinatura-desktop.png" });
 });
-test("todas as rotas de conteúdo exigem autenticação, inclusive as antigas demonstrações", async ({
+test("conteúdo e painel permanecem protegidos antes do pagamento", async ({
   request,
 }) => {
   for (const path of [
@@ -65,21 +51,20 @@ test("todas as rotas de conteúdo exigem autenticação, inclusive as antigas de
     ).status(),
   ).toBe(403);
 });
-test("sem configuração, biblioteca e painel não revelam cards nem permitem edição", async ({
+test("serviço indisponível não libera conteúdo ou edição por fallback", async ({
   page,
 }) => {
   await page.goto("/atividades");
   await expect(page.getByRole("status")).toContainText("configurado");
-  await expect(page.locator(".adventure-card")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Começar Atividade" }),
+  ).toHaveCount(0);
   await page.goto("/admin");
   await expect(
     page.getByRole("heading", { name: "Acesso master necessário" }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "Nova atividade" }),
-  ).toHaveCount(0);
 });
-test("webhook rejeita assinatura inválida e solicita reenvio sem persistência", async ({
+test("webhook rejeita assinatura inválida e pede reenvio sem persistência", async ({
   request,
 }) => {
   const stripe = new Stripe("sk_test_local_fixture");
@@ -120,16 +105,14 @@ test("webhook rejeita assinatura inválida e solicita reenvio sem persistência"
     ).status(),
   ).toBe(503);
 });
-test("cache offline guarda somente apresentação pública e nunca biblioteca, master ou conta", async ({
+test("PWA não guarda páginas de cadastro, pagamento, painel ou atividades", async ({
   page,
-  context,
 }) => {
   await page.goto("/");
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
   await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   for (const path of ["/conta", "/admin", "/atividades"]) await page.goto(path);
-  await page.goto("/");
   const paths = await page.evaluate(async () => {
     const keys = await caches.keys();
     return (
@@ -142,11 +125,7 @@ test("cache offline guarda somente apresentação pública e nunca biblioteca, m
       )
     ).flat();
   });
-  for (const path of ["/conta", "/admin", "/atividades"])
+  for (const path of ["/", "/conta", "/admin", "/atividades"])
     expect(paths).not.toContain(path);
   expect(paths.some((p) => p.startsWith("/api/"))).toBe(false);
-  await context.setOffline(true);
-  await page.reload();
-  await expect(page.locator(".hero-price")).toContainText("R$ 50,00");
-  await expect(page.locator(".adventure-card")).toHaveCount(0);
 });

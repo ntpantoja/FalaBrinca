@@ -3,6 +3,11 @@ export const categories = {
   animals: "Animais",
   objects: "Objetos",
   foods: "Alimentos",
+  colors: "Cores",
+  emotions: "Emoções",
+  transports: "Transportes",
+  actions: "Ações",
+  nature: "Natureza",
 } as const;
 export const difficulties = {
   beginner: "Inicial · ouvir e repetir",

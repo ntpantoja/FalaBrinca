@@ -30,6 +30,7 @@ export default function AccountPage() {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState(false);
+  const [managing, setManaging] = useState(false);
   const [mode, setMode] = useState<"signup" | "login" | "reset">("signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -143,6 +144,7 @@ export default function AccountPage() {
       }
     } catch {}
     const params = new URLSearchParams(window.location.search);
+    setManaging(params.get("gerenciar") === "1");
     if (params.get("modo") === "login") setMode("login");
     if (params.has("assinatura"))
       setMessage(
@@ -294,7 +296,12 @@ export default function AccountPage() {
       setProfile(data.profile);
       setProfileState("ready");
       setConsent(false);
-      setMessage("Tudo pronto! O cantinho da família está preparado.");
+      setMessage("Perfil salvo. Agora você pode confirmar sua assinatura.");
+      requestAnimationFrame(() =>
+        document
+          .getElementById("assinar")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Não foi possível salvar.");
     } finally {
@@ -362,539 +369,507 @@ export default function AccountPage() {
       setBusy(false);
     }
   }
+
+  useEffect(() => {
+    if (
+      !managing &&
+      user &&
+      account?.active &&
+      (account.isMaster || profileState === "ready")
+    )
+      window.location.replace("/atividades");
+  }, [managing, user?.id, account?.active, account?.isMaster, profileState]);
+  useEffect(() => {
+    if (
+      !user ||
+      account?.active ||
+      new URLSearchParams(window.location.search).get("checkout") !== "success"
+    )
+      return;
+    let count = 0;
+    const timer = setInterval(() => {
+      count++;
+      void refresh();
+      if (count >= 8) clearInterval(timer);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [user?.id, account?.active]);
   return (
-    <>
-      <header className="family-header">
-        <Link className="brand" href="/">
-          Fala<span className="brand-light">Brinca</span>
-        </Link>
-        <Link className="adult-link" href="/">
-          ← Voltar às brincadeiras
-        </Link>
+    <main className="auth-entry">
+      <header className="auth-entry-brand">
+        <span aria-hidden="true">🦋</span>
+        <h1>
+          Fala<span>Brinca</span>
+        </h1>
+        <p>Vamos praticar juntos! 🌈</p>
       </header>
-      <main className="family-main">
-        <div className="family-intro">
-          <span className="eyebrow">UM CANTINHO PARA QUEM CUIDA</span>
-          <h1>
-            {user && profile
-              ? `Olá, ${profile.guardian_name.split(" ")[0]}!`
-              : "Pequenas descobertas.\nGrandes conexões."}
-          </h1>
-          <p>
-            {user
-              ? "Acompanhe sua família e sua assinatura, sem complicação."
-              : "Crie sua conta e escolha a assinatura mensal para explorar com a criança."}
-          </p>
-        </div>
-        <div className="family-grid">
-          <section className="account-card auth-card">
-            {!ready ? (
-              <p role="status">Preparando seu cantinho…</p>
-            ) : !configured ? (
-              <div className="notice">
-                <span>🌱</span>
-                <h2>Cadastro em preparação</h2>
-                <p>
-                  O cadastro está sendo configurado. Volte à apresentação para
-                  conhecer o aplicativo.
-                </p>
-                <Link className="primary" href="/">
-                  Voltar à apresentação →
-                </Link>
+      <div className="entry-steps" aria-label="Etapas de acesso">
+        <span className={user ? "done" : "current"}>1 · Conta</span>
+        <i>→</i>
+        <span
+          className={
+            profileState === "ready" || account?.isMaster
+              ? "done"
+              : user
+                ? "current"
+                : ""
+          }
+        >
+          2 · Perfil
+        </span>
+        <i>→</i>
+        <span
+          className={
+            account?.active
+              ? "done"
+              : user && profileState === "ready"
+                ? "current"
+                : ""
+          }
+        >
+          3 · Assinatura
+        </span>
+      </div>
+      <div className="entry-grid">
+        <section className="entry-form kids-card">
+          {!ready ? (
+            <p role="status">Preparando seu acesso…</p>
+          ) : !configured ? (
+            <div className="entry-unavailable">
+              <h2>Cadastro em preparação</h2>
+              <p>
+                O serviço de contas ainda está sendo configurado. Tente
+                novamente em alguns instantes.
+              </p>
+            </div>
+          ) : user ? (
+            <>
+              <div className="signed-in">
+                <span>✓ Conectado</span>
+                <small>{user.email}</small>
               </div>
-            ) : user ? (
-              <>
-                <div className="account-identity">
-                  <span className="profile-avatar">
-                    {profile?.guardian_name?.[0] || "🌿"}
-                  </span>
-                  <div>
-                    <span className="eyebrow">MINHA FAMÍLIA</span>
-                    <p className="account-email">{user.email}</p>
-                  </div>
+              {account?.isMaster ? (
+                <div>
+                  <h2>Acesso master liberado</h2>
+                  <p>
+                    Sua conta pode acessar o aplicativo e administrar o
+                    conteúdo.
+                  </p>
+                  <Link
+                    className="kids-action purple-action"
+                    href="/atividades"
+                  >
+                    Abrir aplicativo →
+                  </Link>
+                  <Link className="kids-action outlined-action" href="/admin">
+                    Painel master
+                  </Link>
                 </div>
-                {account?.isMaster ? (
-                  <div className="master-account-note">
-                    <span className="pill">CONTA DO PROPRIETÁRIO</span>
-                    <h2>Seu painel está pronto.</h2>
-                    <p>
-                      Você pode administrar e acessar as atividades sem
-                      contratar assinatura.
-                    </p>
-                    <Link className="primary" href="/admin">
-                      Abrir painel master →
-                    </Link>
-                    <Link className="secondary" href="/atividades">
-                      Abrir biblioteca
-                    </Link>
-                  </div>
-                ) : profileState === "loading" ? (
-                  <p>Carregando os dados da família…</p>
-                ) : profileState === "error" ? (
-                  <div className="notice">
-                    <p>
-                      Não foi possível carregar o perfil. Seu acesso à conta
-                      está confirmado.
-                    </p>
+              ) : profileState === "loading" ? (
+                <p>Carregando seu perfil…</p>
+              ) : profileState === "error" ? (
+                <div>
+                  <h2>Vamos tentar de novo?</h2>
+                  <p>Não foi possível carregar os dados do perfil.</p>
+                  <button
+                    className="kids-action outlined-action"
+                    onClick={() => void loadProfile()}
+                  >
+                    Tentar novamente
+                  </button>
+                </div>
+              ) : profileState === "edit" ? (
+                <>
+                  <h2>Complete seu perfil ✨</h2>
+                  <p className="entry-copy">
+                    Seu acesso já está confirmado. Preencha os nomes e continue
+                    para a assinatura.
+                  </p>
+                  <form className="account-form" onSubmit={saveProfile}>
+                    <label>
+                      Seu nome
+                      <input
+                        required
+                        autoComplete="name"
+                        minLength={2}
+                        maxLength={80}
+                        value={guardian}
+                        onChange={(e) => setGuardian(e.target.value)}
+                      />
+                    </label>
+                    <label>
+                      Primeiro nome da criança
+                      <input
+                        required
+                        autoComplete="off"
+                        minLength={2}
+                        maxLength={40}
+                        value={child}
+                        onChange={(e) => setChild(e.target.value)}
+                      />
+                      <small>
+                        Usado apenas para personalizar as boas-vindas.
+                      </small>
+                    </label>
+                    <label className="checkbox">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={consent}
+                        onChange={(e) => setConsent(e.target.checked)}
+                      />
+                      Tenho mais de 18 anos e autorização legal para cadastrar o
+                      primeiro nome da criança, conforme as{" "}
+                      <Link href="/informacoes">
+                        informações de privacidade
+                      </Link>
+                      .
+                    </label>
                     <button
-                      className="secondary"
-                      onClick={() => void loadProfile()}
+                      className="kids-action purple-action"
+                      disabled={busy}
                     >
-                      Tentar carregar novamente
+                      {busy ? "Salvando…" : "Continuar para assinatura →"}
                     </button>
-                  </div>
-                ) : profileState === "edit" ? (
-                  <>
-                    <div className="onboarding-steps">
-                      <span className="done">✓ Acesso confirmado</span>
-                      <span>2 · Sua família</span>
-                    </div>
-                    <h2>
-                      {profile ? "Editar os nomes" : "Vamos conhecer vocês?"}
-                    </h2>
-                    <p className="form-intro">
-                      Você já está conectado. Só falta dizer como podemos chamar
-                      vocês nas boas-vindas.
-                    </p>
-                    <form className="account-form" onSubmit={saveProfile}>
-                      <label>
-                        Nome do responsável
-                        <input
-                          value={guardian}
-                          onChange={(e) => setGuardian(e.target.value)}
-                          minLength={2}
-                          maxLength={80}
-                          autoComplete="name"
-                          required
-                          placeholder="Como você gostaria de ser chamado?"
-                        />
-                      </label>
-                      <label>
-                        Primeiro nome da criança
-                        <input
-                          value={child}
-                          onChange={(e) => setChild(e.target.value)}
-                          minLength={2}
-                          maxLength={40}
-                          autoComplete="off"
-                          required
-                          placeholder="Só o primeiro nome, sem sobrenome"
-                        />
-                        <small>
-                          Usado para personalizar as boas-vindas. Não pedimos
-                          foto, data de nascimento ou gravação de voz.
-                        </small>
-                      </label>
-                      <label className="checkbox">
-                        <input
-                          type="checkbox"
-                          checked={consent}
-                          onChange={(e) => setConsent(e.target.checked)}
-                          required
-                        />
-                        Sou responsável legal pela criança, tenho mais de 18
-                        anos e autorizo o uso desses nomes para personalização,
-                        conforme as{" "}
-                        <Link href="/informacoes">
-                          informações de privacidade
-                        </Link>
-                        .
-                      </label>
-                      <button className="primary" disabled={busy}>
-                        {busy ? "Preparando…" : "Salvar e começar a explorar →"}
-                      </button>
-                    </form>
-                  </>
-                ) : (
-                  <div className="family-profile">
-                    <h2>O cantinho de {profile?.child_first_name}</h2>
-                    <p>
-                      Responsável: <strong>{profile?.guardian_name}</strong>
-                    </p>
-                    <Link className="primary" href="/atividades">
-                      Vamos brincar →
-                    </Link>
+                  </form>
+                </>
+              ) : (
+                <div className="entry-profile">
+                  <h2>Olá, {profile?.guardian_name.split(" ")[0]}! 👋</h2>
+                  <p>Perfil de {profile?.child_first_name} preparado.</p>
+                  <button
+                    className="entry-link"
+                    onClick={() => {
+                      setProfileState("edit");
+                      setConsent(false);
+                    }}
+                  >
+                    Editar perfil
+                  </button>
+                  {managing && (
                     <button
-                      className="icon-text"
-                      onClick={() => {
-                        setProfileState("edit");
-                        setConsent(false);
-                      }}
-                    >
-                      ✎ Editar nomes da família
-                    </button>
-                    <button
-                      className="back muted-action"
+                      className="entry-link"
                       disabled={busy}
                       onClick={() => void deleteNames()}
                     >
                       Apagar os nomes cadastrados
                     </button>
-                  </div>
+                  )}
+                </div>
+              )}
+              <section className="entry-membership">
+                <h3>Sua assinatura</h3>
+                <span className="status-badge">
+                  {loadingAccount
+                    ? "Consultando…"
+                    : account
+                      ? (statuses[account.status] ?? "Em análise")
+                      : "Aguardando consulta"}
+                </span>
+                {account?.periodEnd && (
+                  <p>
+                    {account.cancelAtPeriodEnd
+                      ? "Acesso até"
+                      : "Fim do período atual"}
+                    :{" "}
+                    {new Date(account.periodEnd).toLocaleDateString("pt-BR", {
+                      timeZone: "America/Sao_Paulo",
+                    })}
+                    .
+                  </p>
                 )}
-                <div className="membership-panel">
-                  <span className="eyebrow">SUA ASSINATURA</span>
-                  <div className="status-badge">
-                    {loadingAccount
-                      ? "Consultando…"
-                      : account
-                        ? (statuses[account.status] ?? "Em análise")
-                        : "Status ainda não consultado"}
-                  </div>
-                  {account?.periodEnd && (
-                    <p>
-                      {account.cancelAtPeriodEnd
-                        ? "Acesso até"
-                        : "Fim do período atual"}
-                      :{" "}
-                      {new Date(account.periodEnd).toLocaleDateString("pt-BR", {
-                        timeZone: "America/Sao_Paulo",
-                      })}
-                      .
-                    </p>
-                  )}
-                  {account?.cancelAtPeriodEnd && (
-                    <p>
-                      A renovação está cancelada. Você mantém o acesso até o fim
-                      do período pago.
-                    </p>
-                  )}
-                  {account?.active && (
-                    <Link className="secondary" href="/atividades">
-                      Explorar todas as atividades →
-                    </Link>
-                  )}
+                {account?.cancelAtPeriodEnd && (
+                  <p>
+                    A renovação foi cancelada. Você mantém acesso pelo período
+                    pago.
+                  </p>
+                )}
+                {!account?.active && (
                   <button
-                    className="secondary"
+                    className="entry-link"
                     disabled={busy || loadingAccount}
                     onClick={() => void refresh()}
                   >
-                    Atualizar status
-                  </button>
-                  {account?.canManage && (
-                    <button
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() => void billing("portal")}
-                    >
-                      Gerenciar assinatura e cancelamento
-                    </button>
-                  )}
-                </div>
-                <button
-                  className="back"
-                  disabled={busy}
-                  onClick={() => void logout()}
-                >
-                  Sair da conta
-                </button>
-              </>
-            ) : pending ? (
-              <div className="email-check">
-                <span className="email-illustration">
-                  ✉️<b>✓</b>
-                </span>
-                <span className="eyebrow">FALTA SÓ CONFIRMAR SEU ACESSO</span>
-                <h2>
-                  Um convite chegou
-                  <br />
-                  no seu e-mail 💌
-                </h2>
-                <p>
-                  Confira a caixa de entrada de <strong>{pending}</strong>.
-                </p>
-                <ol>
-                  <li>
-                    <b>1</b>
-                    <span>
-                      Procure a mensagem de confirmação do FalaBrinca. Veja
-                      também o spam ou lixo eletrônico.
-                    </span>
-                  </li>
-                  <li>
-                    <b>2</b>
-                    <span>
-                      Toque no link <strong>Confirmar e-mail</strong> da
-                      mensagem mais recente.
-                    </span>
-                  </li>
-                  <li>
-                    <b>3</b>
-                    <span>
-                      Você volta conectado e preenche{" "}
-                      <strong>seu nome e o primeiro nome da criança</strong>.
-                      Não precisa digitar a senha outra vez.
-                    </span>
-                  </li>
-                </ol>
-                <button
-                  className="secondary"
-                  disabled={busy || cooldown > 0}
-                  onClick={() => void resend()}
-                >
-                  {cooldown
-                    ? `Reenviar em ${cooldown}s`
-                    : "Reenviar confirmação"}
-                </button>
-                <button
-                  className="secondary"
-                  disabled={busy}
-                  onClick={async () => {
-                    const { data } = await browserAuth()!.auth.getUser();
-                    if (data.user) {
-                      setUser(data.user);
-                      setPending("");
-                    } else
-                      setMessage(
-                        "Abra o link no seu e-mail. O acesso será confirmado no navegador em que você abrir a mensagem.",
-                      );
-                  }}
-                >
-                  Já cliquei no link
-                </button>
-                <button
-                  className="back"
-                  onClick={() => {
-                    setPending("");
-                    setMode("login");
-                    try {
-                      sessionStorage.removeItem("falabrinca-pending-email");
-                    } catch {}
-                  }}
-                >
-                  Usar outro e-mail ou entrar em uma conta existente
-                </button>
-              </div>
-            ) : (
-              <>
-                <div
-                  className="auth-tabs"
-                  role="group"
-                  aria-label="Tipo de acesso"
-                >
-                  <button
-                    className={mode === "signup" ? "active" : ""}
-                    onClick={() => {
-                      setMode("signup");
-                      setMessage("");
-                    }}
-                  >
-                    Criar conta
-                  </button>
-                  <button
-                    className={mode === "login" ? "active" : ""}
-                    onClick={() => {
-                      setMode("login");
-                      setMessage("");
-                    }}
-                  >
-                    Já tenho conta
-                  </button>
-                </div>
-                <h2>
-                  {mode === "signup"
-                    ? "Sua família é bem-vinda."
-                    : mode === "reset"
-                      ? "Vamos recuperar seu acesso."
-                      : "Que bom ter você de volta."}
-                </h2>
-                <p className="form-intro">
-                  {mode === "signup"
-                    ? "A conta é do adulto. As atividades são liberadas após a assinatura."
-                    : mode === "reset"
-                      ? "Enviaremos um link para você escolher uma nova senha."
-                      : "Entre e continue de onde sua família parou."}
-                </p>
-                {mode !== "reset" && (
-                  <>
-                    <button
-                      className="google-button"
-                      disabled={busy}
-                      onClick={() => void google()}
-                    >
-                      <svg
-                        viewBox="0 0 48 48"
-                        width="22"
-                        height="22"
-                        aria-hidden="true"
-                      >
-                        <path
-                          fill="#4285f4"
-                          d="M43.6 24.5c0-1.4-.1-2.8-.4-4.1H24v7.8h11a9.5 9.5 0 01-4.1 6.3v5.2h6.7c3.9-3.6 6-8.8 6-15.2"
-                        />
-                        <path
-                          fill="#34a853"
-                          d="M24 44c5.5 0 10.1-1.8 13.5-4.9l-6.7-5.2c-1.8 1.2-4.1 1.9-6.8 1.9-5.2 0-9.6-3.5-11.2-8.2H5.9v5.3A20.4 20.4 0 0024 44"
-                        />
-                        <path
-                          fill="#fbbc05"
-                          d="M12.8 27.6a12 12 0 010-7.2v-5.3H5.9a20 20 0 000 17.8z"
-                        />
-                        <path
-                          fill="#ea4335"
-                          d="M24 12.2c3 0 5.5 1 7.5 2.9l5.7-5.7A19.6 19.6 0 0024 4a20.4 20.4 0 00-18.1 11.1l6.9 5.3c1.6-4.7 6-8.2 11.2-8.2"
-                        />
-                      </svg>
-                      Continuar com Google
-                    </button>
-                    <div className="auth-divider">
-                      <span>ou use seu e-mail</span>
-                    </div>
-                  </>
-                )}
-                <form className="account-form" onSubmit={submit}>
-                  <label>
-                    E-mail do responsável
-                    <input
-                      type="email"
-                      autoComplete="email"
-                      required
-                      maxLength={254}
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="voce@exemplo.com"
-                    />
-                  </label>
-                  {mode !== "reset" && (
-                    <label>
-                      Senha
-                      {mode === "signup" && (
-                        <small>Pelo menos 8 caracteres.</small>
-                      )}
-                      <div className="password-field">
-                        <input
-                          type={showPassword ? "text" : "password"}
-                          required
-                          minLength={mode === "signup" ? 8 : 1}
-                          maxLength={128}
-                          autoComplete={
-                            mode === "signup"
-                              ? "new-password"
-                              : "current-password"
-                          }
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                        />
-                        <button
-                          type="button"
-                          aria-label={
-                            showPassword ? "Ocultar senha" : "Mostrar senha"
-                          }
-                          onClick={() => setShowPassword((value) => !value)}
-                        >
-                          {showPassword ? "◉" : "◎"}
-                        </button>
-                      </div>
-                    </label>
-                  )}
-                  {mode === "signup" && (
-                    <label className="checkbox">
-                      <input type="checkbox" required />
-                      Tenho mais de 18 anos e li as{" "}
-                      <Link href="/informacoes">
-                        informações de uso, privacidade e assinatura
-                      </Link>
-                      .
-                    </label>
-                  )}
-                  <button className="primary" disabled={busy}>
-                    {busy
-                      ? "Aguarde…"
-                      : mode === "signup"
-                        ? "Criar minha conta"
-                        : mode === "login"
-                          ? "Entrar"
-                          : "Enviar instruções"}
-                  </button>
-                </form>
-                {mode === "login" && (
-                  <button
-                    className="back"
-                    onClick={() => {
-                      setMode("reset");
-                      setMessage("");
-                    }}
-                  >
-                    Esqueci minha senha
+                    Atualizar status do pagamento
                   </button>
                 )}
-                <small className="auth-privacy">
-                  O acesso com Google usa a conta do responsável. O primeiro
-                  nome da criança será informado depois, com sua autorização.
-                </small>
-              </>
-            )}
-            <div
-              className="feedback account-feedback"
-              role="status"
-              aria-live="polite"
-            >
-              {message}
-            </div>
-          </section>
-          <aside className="family-aside">
-            <section className="account-card plan-card">
-              <span className="pill">PLANO FALABRINCA</span>
-              <h2>Um mundo de descobertas.</h2>
-              <div className="price">
-                {PLAN.label}
-                <span>/mês</span>
-              </div>
-              <ul className="benefits">
-                <li>
-                  <b>Biblioteca visual por categoria e dificuldade.</b>
-                </li>
-                <li>Figuras, associações e histórias em imagens.</li>
-                <li>Instruções faladas: não precisa saber ler.</li>
-                <li>
-                  Favoritos, estrelas e jardim de conquistas no dispositivo.
-                </li>
-                <li>Gerenciamento e cancelamento pelo portal seguro.</li>
-              </ul>
-              <p className="renewal">
-                O acesso às atividades é exclusivo para assinantes. Cobrança
-                recorrente de R$ 50,00 por mês até cancelar; ao cancelar a
-                renovação, o acesso continua até o fim do período pago.
-              </p>
+                {account?.active && managing && (
+                  <Link
+                    className="kids-action purple-action"
+                    href="/atividades"
+                  >
+                    Voltar ao aplicativo →
+                  </Link>
+                )}
+                {account?.canManage && (
+                  <button
+                    className="kids-action outlined-action"
+                    disabled={busy}
+                    onClick={() => void billing("portal")}
+                  >
+                    Gerenciar pagamento e cancelamento
+                  </button>
+                )}
+              </section>
               <button
-                className="primary"
-                disabled={
-                  !ready ||
-                  !configured ||
-                  !user ||
-                  busy ||
-                  loadingAccount ||
-                  !account ||
-                  account.active ||
-                  !["none", "canceled", "incomplete_expired"].includes(
-                    account.status,
-                  )
-                }
-                onClick={() => void billing("checkout")}
+                className="entry-link muted-action"
+                disabled={busy}
+                onClick={() => void logout()}
               >
-                {account?.active
-                  ? account.isMaster
-                    ? "Acesso master liberado"
-                    : "Sua assinatura está ativa"
-                  : !user
-                    ? "Entre ou crie sua conta para assinar"
-                    : "Assinar por R$ 50,00/mês"}
+                Sair da conta
               </button>
-              <small>
-                Criar conta não gera cobrança. Você confirma a compra no
-                checkout seguro do Stripe.
-              </small>
-            </section>
-            <p className="family-disclaimer">
-              🌿 Um recurso educativo para explorar junto. Não substitui
-              avaliação ou terapia fonoaudiológica.
-            </p>
-          </aside>
-        </div>
-        <Link className="back" href="/informacoes">
-          Uso, privacidade e assinatura
-        </Link>
-      </main>
-    </>
+            </>
+          ) : pending ? (
+            <div className="email-check">
+              <span className="email-illustration">
+                ✉️<b>✓</b>
+              </span>
+              <h2>
+                Um convite chegou
+                <br />
+                no seu e-mail 💌
+              </h2>
+              <p>
+                Confira a caixa de entrada de <strong>{pending}</strong>.
+              </p>
+              <ol>
+                <li>
+                  <b>1</b>
+                  <span>
+                    Abra a mensagem de confirmação. Veja também o spam ou lixo
+                    eletrônico.
+                  </span>
+                </li>
+                <li>
+                  <b>2</b>
+                  <span>
+                    Toque no link <strong>Confirmar e-mail</strong> da mensagem
+                    mais recente.
+                  </span>
+                </li>
+                <li>
+                  <b>3</b>
+                  <span>
+                    Você volta conectado, preenche seu nome e o primeiro nome da
+                    criança e confirma a assinatura. Não precisa digitar a senha
+                    novamente.
+                  </span>
+                </li>
+              </ol>
+              <button
+                className="kids-action outlined-action"
+                disabled={busy || cooldown > 0}
+                onClick={() => void resend()}
+              >
+                {cooldown ? `Reenviar em ${cooldown}s` : "Reenviar confirmação"}
+              </button>
+              <button
+                className="entry-link"
+                onClick={() => {
+                  setPending("");
+                  setMode("login");
+                  try {
+                    sessionStorage.removeItem("falabrinca-pending-email");
+                  } catch {}
+                }}
+              >
+                Usar outro e-mail ou entrar
+              </button>
+            </div>
+          ) : (
+            <>
+              <div
+                className="auth-tabs"
+                role="group"
+                aria-label="Tipo de acesso"
+              >
+                <button
+                  className={mode === "signup" ? "active" : ""}
+                  onClick={() => {
+                    setMode("signup");
+                    setMessage("");
+                  }}
+                >
+                  Criar conta
+                </button>
+                <button
+                  className={mode === "login" ? "active" : ""}
+                  onClick={() => {
+                    setMode("login");
+                    setMessage("");
+                  }}
+                >
+                  Já tenho conta
+                </button>
+              </div>
+              <h2>
+                {mode === "signup"
+                  ? "Comece sua jornada ✨"
+                  : mode === "login"
+                    ? "Bom ter você de volta!"
+                    : "Recupere seu acesso"}
+              </h2>
+              <p className="entry-copy">
+                {mode === "signup"
+                  ? "Cadastre-se e escolha seu plano para começar."
+                  : mode === "login"
+                    ? "Entre para continuar de onde parou."
+                    : "Enviaremos um link para criar uma nova senha."}
+              </p>
+              {mode !== "reset" && (
+                <>
+                  <button
+                    className="google-button"
+                    disabled={busy}
+                    onClick={() => void google()}
+                  >
+                    <span className="google-letter" aria-hidden="true">
+                      G
+                    </span>
+                    Continuar com Google
+                  </button>
+                  <div className="auth-divider">
+                    <span>ou use seu e-mail</span>
+                  </div>
+                </>
+              )}
+              <form className="account-form" onSubmit={submit}>
+                <label>
+                  E-mail
+                  <input
+                    type="email"
+                    required
+                    autoComplete="email"
+                    maxLength={254}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="voce@exemplo.com"
+                  />
+                </label>
+                {mode !== "reset" && (
+                  <label>
+                    Senha
+                    {mode === "signup" && (
+                      <small>Pelo menos 8 caracteres.</small>
+                    )}
+                    <div className="password-field">
+                      <input
+                        aria-label="Senha"
+                        required
+                        type={showPassword ? "text" : "password"}
+                        minLength={mode === "signup" ? 8 : 1}
+                        maxLength={128}
+                        autoComplete={
+                          mode === "signup"
+                            ? "new-password"
+                            : "current-password"
+                        }
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        aria-label={
+                          showPassword ? "Ocultar senha" : "Mostrar senha"
+                        }
+                        onClick={() => setShowPassword((v) => !v)}
+                      >
+                        {showPassword ? "◉" : "◎"}
+                      </button>
+                    </div>
+                  </label>
+                )}
+                {mode === "signup" && (
+                  <label className="checkbox">
+                    <input type="checkbox" required />
+                    Tenho mais de 18 anos e li as{" "}
+                    <Link href="/informacoes">
+                      informações de uso, privacidade e assinatura
+                    </Link>
+                    .
+                  </label>
+                )}
+                <button className="kids-action purple-action" disabled={busy}>
+                  {busy
+                    ? "Aguarde…"
+                    : mode === "signup"
+                      ? "Criar minha conta"
+                      : mode === "login"
+                        ? "Entrar"
+                        : "Enviar instruções"}
+                </button>
+              </form>
+              {mode === "login" && (
+                <button
+                  className="entry-link"
+                  onClick={() => {
+                    setMode("reset");
+                    setMessage("");
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
+              )}
+            </>
+          )}
+          <div className="entry-feedback" role="status" aria-live="polite">
+            {message}
+          </div>
+        </section>
+        <aside className="entry-plan kids-card" id="assinar">
+          <span className="entry-plan-label">ASSINATURA MENSAL</span>
+          <h2>Um mundo para descobrir 🌈</h2>
+          <div className="price">
+            {PLAN.label}
+            <span>/mês</span>
+          </div>
+          <ul>
+            <li>Atividades visuais com áudio e repetição.</li>
+            <li>Oito categorias para explorar.</li>
+            <li>Progresso, metas e recompensas.</li>
+            <li>Painel dos pais e prática guiada.</li>
+          </ul>
+          <p>
+            Renovação automática até cancelar. O acesso continua até o fim do
+            período pago ao cancelar a renovação.
+          </p>
+          <button
+            className="kids-action purple-action"
+            disabled={
+              !ready ||
+              !configured ||
+              !user ||
+              busy ||
+              loadingAccount ||
+              !account ||
+              account.active ||
+              profileState !== "ready" ||
+              !["none", "canceled", "incomplete_expired"].includes(
+                account.status,
+              )
+            }
+            onClick={() => void billing("checkout")}
+          >
+            {account?.isMaster
+              ? "Acesso master liberado"
+              : account?.active
+                ? "Sua assinatura está ativa"
+                : !user
+                  ? "Crie sua conta ou entre para assinar"
+                  : "Assinar por R$ 50,00/mês"}
+          </button>
+          <small>
+            Você confirma o pagamento no checkout seguro do Stripe. Criar uma
+            conta, por si só, não gera cobrança.
+          </small>
+          <Link className="entry-link" href="/informacoes">
+            Uso e privacidade
+          </Link>
+        </aside>
+      </div>
+      <p className="entry-disclaimer">
+        Recurso educativo. Não substitui avaliação ou terapia fonoaudiológica.
+      </p>
+    </main>
   );
 }

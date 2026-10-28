@@ -1,3 +1,8 @@
+import {
+  emptyPractice,
+  readPractice,
+  type PracticeData,
+} from "./practice-progress";
 export type Progress = {
   stars: number;
   completed: Record<string, number>;
@@ -5,6 +10,7 @@ export type Progress = {
   lastActivity: string | null;
   history: { id: string; at: string }[];
   sound: boolean;
+  practice: PracticeData;
 };
 export const emptyProgress: Progress = {
   stars: 0,
@@ -13,6 +19,7 @@ export const emptyProgress: Progress = {
   lastActivity: null,
   history: [],
   sound: true,
+  practice: structuredClone(emptyPractice),
 };
 export function readProgress(): Progress {
   try {
@@ -59,6 +66,7 @@ export function readProgress(): Progress {
             .slice(0, 30)
         : [],
       sound: p.sound !== false,
+      practice: readPractice(p.practice),
     };
   } catch {
     return { ...emptyProgress };

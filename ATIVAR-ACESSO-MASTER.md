@@ -1,3 +1,5 @@
+> **Layout atual:** siga também [ATUALIZAR-PAINEL-VISUAL.md](ATUALIZAR-PAINEL-VISUAL.md) para as oito categorias e o novo painel.
+
 # Ativar sua conta master e o editor de cards
 
 Use sua conta que já existe no FalaBrinca. **Não é criada uma senha compartilhada nem um usuário administrativo automático.** O servidor verifica o ID do usuário autenticado no Supabase e compara com uma configuração privada do servidor. Outros usuários não podem ativar o master pelo cadastro, pelo e-mail ou pelo navegador.
@@ -32,9 +34,9 @@ Não use prefixo `NEXT_PUBLIC_`. A permissão é conferida no servidor, nunca em
 1. Acesse `https://falabrinca-43kf.vercel.app/conta?modo=login`.
 2. Entre com sua conta de sempre (e-mail/senha ou Google já configurado).
 3. Sua conta mostrará **Acesso master** e um botão para abrir o painel. Você também pode abrir `https://falabrinca-43kf.vercel.app/admin`.
-4. Clique em **Importar 24 atividades iniciais** e confirme.
+4. Clique em **Importar atividades iniciais** e confirme.
 
-A importação cria 24 atividades com 72 rodadas. Não sobrescreve atividades que já existem com o mesmo identificador. Se você apagar uma atividade inicial e clicar em importar novamente, ela será recriada; a confirmação informa isso. Nada é reimportado automaticamente ao iniciar o aplicativo.
+A importação cria 27 atividades com 81 rodadas. Não sobrescreve atividades que já existem com o mesmo identificador. Se você apagar uma atividade inicial e clicar em importar novamente, ela será recriada; a confirmação informa isso. Nada é reimportado automaticamente ao iniciar o aplicativo.
 
 Sua conta master pode acessar e testar a biblioteca sem contratar assinatura. **Isso não concede acesso gratuito aos outros usuários.** Todas as atividades, inclusive as antigas demonstrações, agora exigem assinatura ativa dos usuários comuns.
 
@@ -43,7 +45,7 @@ Sua conta master pode acessar e testar a biblioteca sem contratar assinatura. **
 No painel:
 
 - **Nova atividade**: cria um card e suas rodadas, inicialmente em rascunho.
-- **Categoria**: Animais, Objetos ou Alimentos.
+- **Categoria**: Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações ou Natureza.
 - **Dificuldade**: Inicial (ouvir e repetir), Intermediário (associar) ou Avançado (histórias visuais).
 - **Figura do card**: escolha um desenho/emoji para representar a atividade.
 - **Rodadas**: personalize a instrução falada e as figuras. O nível inicial usa o nome da figura correta no áudio de repetição.

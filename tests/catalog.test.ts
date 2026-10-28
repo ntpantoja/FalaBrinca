@@ -4,15 +4,42 @@ import { catalog } from "../lib/catalog";
 import { allContent } from "../lib/activity-content";
 import { sequencePictures } from "../lib/pictures";
 import { parseProfile } from "../lib/profile";
-test("24 atividades distintas e 72 rodadas completas, por categoria e dificuldade", () => {
-  assert.equal(catalog.length, 24);
-  assert.equal(new Set(catalog.map((a) => a.id)).size, 24);
-  assert.equal(catalog.filter((a) => a.difficulty === "beginner").length, 8);
+test("27 atividades distintas e 81 rodadas completas, por categoria e dificuldade", () => {
+  assert.equal(catalog.length, 27);
+  assert.equal(new Set(catalog.map((a) => a.id)).size, 27);
+  assert.equal(catalog.filter((a) => a.difficulty === "beginner").length, 11);
+  for (const category of [
+    "animals",
+    "objects",
+    "foods",
+    "colors",
+    "emotions",
+    "transports",
+    "actions",
+    "nature",
+  ])
+    assert.ok(
+      catalog.some(
+        (a) => a.category === category && a.difficulty === "beginner",
+      ),
+      category,
+    );
   for (const a of catalog)
-    assert.ok(["animals", "objects", "foods"].includes(a.category));
+    assert.ok(
+      [
+        "animals",
+        "objects",
+        "foods",
+        "colors",
+        "emotions",
+        "transports",
+        "actions",
+        "nature",
+      ].includes(a.category),
+    );
   assert.equal(
     catalog.reduce((n, a) => n + allContent[a.id].rounds.length, 0),
-    72,
+    81,
   );
   for (const activity of catalog) {
     const content = allContent[activity.id];
