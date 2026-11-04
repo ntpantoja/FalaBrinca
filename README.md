@@ -11,7 +11,7 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 
 As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. O material de importação inclui 27 atividades e 81 rodadas. Dificuldades:
 
-1. **Inicial**: imagem e áudio da palavra → convite à repetição → seleção da figura.
+1. **Inicial**: a figura de referência permanece visível acima de três opções na mesma tela. O áudio diz a palavra e convida à repetição; a criança toca no desenho igual. Um erro permite tentar novamente, e o acerto libera a próxima palavra. Não é preciso apertar outro botão para mostrar as opções.
 2. **Intermediário**: associações de imagens com instruções faladas.
 3. **Avançado**: organização de histórias em imagens.
 

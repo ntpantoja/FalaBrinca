@@ -124,6 +124,26 @@ test("Google encaminha ao provedor com retorno para o cadastro — autorização
     "http://localhost:3101/auth/continuar",
   );
 });
+test("cancelamento do provedor volta ao login sem sugerir e-mail expirado", async ({
+  page,
+}) => {
+  await authMock(page);
+  await page.goto(
+    "/auth/continuar?error=access_denied&error_description=private-detail",
+  );
+  await expect(page.getByRole("status")).toContainText(
+    "A entrada não foi autorizada",
+  );
+  await expect(page.getByRole("status")).not.toContainText("expirou");
+  await expect(page.getByRole("status")).not.toContainText("private-detail");
+  await page.getByRole("link", { name: "Voltar para entrar" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Bom ter você de volta!" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Continuar com Google" }),
+  ).toBeEnabled();
+});
 test("recuperação mantém mensagem sem revelar se conta existe", async ({
   page,
 }) => {
@@ -195,10 +215,15 @@ for (const activity of catalog)
       .waitFor();
     for (const [index, round] of content[activity.id].rounds.entries()) {
       if (activity.difficulty === "beginner") {
-        await page
-          .getByRole("button", { name: "Escolher a figura para continuar" })
-          .click();
-        await expect(page.locator(".selection-model")).toContainText("👂");
+        await expect(
+          page.getByRole("img", {
+            name: `Figura para imitar: ${round.answer}`,
+            exact: true,
+          }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("button", { name: "Pratiquei esta palavra!" }),
+        ).toBeDisabled();
         await expect(page.locator(".word-choice-grid button")).toHaveCount(
           round.choices.length,
         );
@@ -496,12 +521,12 @@ test("painel de referência, metas, progresso, gráfico, exportação e configur
     .click();
   await expect(page.getByRole("status")).toContainText("Não gravamos");
   for (const [index, round] of content[catalog[0].id].rounds.entries()) {
-    await page
-      .getByRole("button", { name: "Ir para a seleção da figura", exact: true })
-      .click();
-    await expect(page.locator(".selection-model .activity-image")).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("img", {
+        name: `Figura para imitar: ${round.answer}`,
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.locator(".word-choice-grid button")).toHaveCount(
       round.choices.length,
     );
@@ -560,6 +585,98 @@ test("painel de referência, metas, progresso, gráfico, exportação e configur
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+test("nível inicial mantém lápis como modelo e três opções, com áudio e sem avançar no erro", async ({
+  page,
+}) => {
+  await paidApp(page);
+  await page.addInitScript(() => {
+    const spoken: string[] = [];
+    Object.defineProperty(window, "testSpoken", { value: spoken });
+    window.speechSynthesis.speak = (utterance) => {
+      spoken.push(utterance.text);
+    };
+  });
+  const activity = catalog.find(
+    (a) => a.category === "objects" && a.difficulty === "beginner",
+  )!;
+  const rounds = ["LÁPIS", "BOLA"].map((answer) => ({
+    prompt: `Encontre ${answer}`,
+    answer,
+    hint: "Observe o desenho de cima.",
+    choices: [
+      {
+        name: "LÁPIS",
+        emoji: "✏️",
+        image_url: "https://media.example.test/pencil.svg",
+      },
+      { name: "BOLA", emoji: "⚽" },
+      { name: "LIVRO", emoji: "📘" },
+    ],
+  }));
+  await page.route(`**/api/activities/${activity.id}`, (r) =>
+    r.fulfill({ json: { id: activity.id, rounds } }),
+  );
+  await page.route("https://media.example.test/pencil.svg", (r) =>
+    r.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path fill="orange" d="M20 60L65 15L85 35L40 80L10 90Z"/></svg>',
+    }),
+  );
+  await page.goto("/atividades");
+  await page
+    .getByRole("button", { name: "Começar Atividade", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Objetos", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Jogar ${activity.title}`, exact: true })
+    .click();
+  const model = page.getByRole("img", {
+    name: "Figura para imitar: LÁPIS",
+    exact: true,
+  });
+  const options = page.getByRole("group", {
+    name: "Escolha entre três figuras",
+  });
+  await expect(model).toBeVisible();
+  await expect(options.getByRole("button")).toHaveCount(3);
+  await expect(model.locator("img")).toHaveJSProperty("naturalWidth", 100);
+  await expect(
+    options.getByRole("button", { name: "LÁPIS", exact: true }).locator("img"),
+  ).toHaveAttribute(
+    "src",
+    (await model.locator("img").getAttribute("src")) as string,
+  );
+  const modelBox = await model.boundingBox();
+  const optionsBox = await options.boundingBox();
+  expect(optionsBox!.y).toBeGreaterThanOrEqual(modelBox!.y + modelBox!.height);
+  await expect
+    .poll(() =>
+      page.evaluate(() =>
+        (window as unknown as { testSpoken: string[] }).testSpoken.join(" "),
+      ),
+    )
+    .toContain("LÁPIS. Repita comigo: LÁPIS.");
+  const next = page.getByRole("button", { name: "Pratiquei esta palavra!" });
+  await expect(next).toBeDisabled();
+  await options.getByRole("button", { name: "LIVRO", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText("Vamos tentar de novo");
+  await expect(next).toBeDisabled();
+  await expect(model).toBeVisible();
+  await options.getByRole("button", { name: "LÁPIS", exact: true }).click();
+  await expect(next).toBeEnabled();
+  await expect(
+    options.getByRole("button", { name: "BOLA", exact: true }),
+  ).toBeDisabled();
+  await page.screenshot({ path: "/tmp/falabrinca-lapis.png", fullPage: true });
+  await next.click();
+  await expect(
+    page.getByRole("img", { name: "Figura para imitar: BOLA", exact: true }),
+  ).toBeVisible();
+  await expect(
+    options.getByRole("button", { name: "BOLA", exact: true }),
+  ).toBeEnabled();
+  await expect(next).toBeDisabled();
 });
 test("imagem indisponível mostra desenho alternativo e não quebra a atividade", async ({
   page,

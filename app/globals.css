@@ -4783,3 +4783,21 @@ body {
 .word-practice .kids-screen-header h1 {
   display: block;
 }
+
+/* Keep the model and all three matching choices together on small screens. */
+.word-practice .word-hero-card {
+  height: clamp(180px, 28vh, 260px);
+}
+.word-practice .word-hero-card > span {
+  font-size: clamp(90px, 18vh, 135px);
+}
+.word-practice .word-selection {
+  margin-top: 16px;
+}
+.word-practice .word-choice-grid > button.chosen {
+  border-color: #37946e;
+  background: #e8f8ef;
+}
+.word-practice .word-choice-grid > button:disabled {
+  opacity: 1;
+}

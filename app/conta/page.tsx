@@ -241,20 +241,24 @@ export default function AccountPage() {
     if (!auth) return;
     setBusy(true);
     setMessage("");
-    const { error } = await auth.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/continuar`,
-        queryParams: { prompt: "select_account" },
-      },
-    });
-    if (error) {
+    try {
+      const { error } = await auth.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/continuar`,
+          queryParams: { prompt: "select_account" },
+        },
+      });
+      if (error) throw error;
+    } catch {
       setMessage(
-        "Não foi possível abrir o Google. Você pode usar seu e-mail ou tentar novamente.",
+        "Não foi possível abrir o Google. Verifique sua conexão e tente novamente, ou entre com seu e-mail.",
       );
+    } finally {
       setBusy(false);
     }
   }
+
   async function resend() {
     const auth = browserAuth();
     if (!auth || cooldown) return;

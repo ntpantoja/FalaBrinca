@@ -15,10 +15,16 @@ export default function ContinueAuth() {
       try {
         const params = new URLSearchParams(window.location.search);
         const hash = new URLSearchParams(window.location.hash.slice(1));
-        if (params.get("error") || hash.get("error"))
-          throw new Error(
-            "Esse link não pôde ser confirmado. Ele pode ter expirado ou já ter sido usado.",
-          );
+        const providerError = params.get("error") || hash.get("error");
+        if (providerError) {
+          if (!cancelled)
+            setError(
+              providerError === "access_denied"
+                ? "A entrada não foi autorizada. Tente novamente com Google ou entre com seu e-mail."
+                : "Não foi possível concluir a entrada. Tente novamente com Google ou entre com seu e-mail.",
+            );
+          return;
+        }
         const code = params.get("code");
         const token = params.get("token_hash");
         if (code) {
@@ -73,8 +79,8 @@ export default function ContinueAuth() {
             "Estamos confirmando seu acesso. Em seguida, você vai preencher os nomes da família, sem precisar entrar novamente."}
         </p>
         {error && (
-          <Link className="primary" href="/conta?reenviar=1">
-            Reenviar confirmação ou entrar →
+          <Link className="primary" href="/conta?modo=login">
+            Voltar para entrar →
           </Link>
         )}
       </div>
