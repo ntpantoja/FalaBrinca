@@ -46,7 +46,7 @@ export function WordPractice({
   onPause,
 }: Props) {
   const [step, setStep] = useState(0);
-  const [stage, setStage] = useState<"select" | "success">("select");
+  const [stage, setStage] = useState<"select" | "retry" | "success">("select");
   const [choices, setChoices] = useState<Choice[]>(() =>
     shuffledChoices(content.rounds[0].choices),
   );
@@ -95,6 +95,7 @@ export function WordPractice({
       setFeedback("Isso! Você encontrou a figura.");
       speak(`Isso! ${round.answer}.`);
     } else {
+      setStage("retry");
       setFeedback("Vamos tentar de novo?");
       speak("Vamos tentar outra figura, sem pressa.");
     }
@@ -231,8 +232,8 @@ export function WordPractice({
             : "Ouça, repita e escolha abaixo o desenho igual ao de cima.")}
       </p>
       <button
-        className="kids-action learned-action"
-        disabled={stage === "select"}
+        className={`kids-action learned-action${stage === "retry" ? " retry-action" : ""}`}
+        disabled={stage !== "success"}
         onClick={done}
       >
         <ArrowRight size={32} aria-hidden="true" />

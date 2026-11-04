@@ -662,9 +662,11 @@ test("nível inicial mantém lápis como modelo e três opções, com áudio e s
   await options.getByRole("button", { name: "LIVRO", exact: true }).click();
   await expect(page.getByRole("status")).toContainText("Vamos tentar de novo");
   await expect(next).toBeDisabled();
+  await expect(next).toHaveCSS("background-color", "rgb(220, 38, 38)");
   await expect(model).toBeVisible();
   await options.getByRole("button", { name: "LÁPIS", exact: true }).click();
   await expect(next).toBeEnabled();
+  await expect(next).toHaveCSS("background-color", "rgb(53, 184, 134)");
   await expect(
     options.getByRole("button", { name: "BOLA", exact: true }),
   ).toBeDisabled();
@@ -677,6 +679,7 @@ test("nível inicial mantém lápis como modelo e três opções, com áudio e s
     options.getByRole("button", { name: "BOLA", exact: true }),
   ).toBeEnabled();
   await expect(next).toBeDisabled();
+  await expect(next).not.toHaveClass(/retry-action/);
 });
 test("imagem indisponível mostra desenho alternativo e não quebra a atividade", async ({
   page,

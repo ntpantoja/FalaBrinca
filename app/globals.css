@@ -3627,6 +3627,11 @@ body {
   color: white;
   opacity: 0.8;
 }
+.learned-action.retry-action:disabled {
+  background: #dc2626;
+  color: white;
+  opacity: 1;
+}
 .word-footer {
   display: flex;
   justify-content: space-between;
