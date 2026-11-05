@@ -207,6 +207,24 @@ export default function AccountPage() {
             emailRedirectTo: `${window.location.origin}/auth/continuar`,
           },
         });
+        // Supabase can return an obfuscated user with no identities for an
+        // existing confirmed account instead of an explicit duplicate error.
+        if (
+          error?.code === "user_already_exists" ||
+          (!error && !data.session && data.user?.identities?.length === 0)
+        ) {
+          setPassword("");
+          setPending("");
+          setCooldown(0);
+          setMode("login");
+          try {
+            sessionStorage.removeItem("falabrinca-pending-email");
+          } catch {}
+          setMessage(
+            "Este e-mail já está cadastrado. Entre com sua senha ou com Google. Se esqueceu a senha, toque em Esqueci minha senha.",
+          );
+          return;
+        }
         if (error) throw error;
         setPassword("");
         if (!data.session) {
@@ -272,7 +290,7 @@ export default function AccountPage() {
     setMessage(
       error
         ? "Não foi possível reenviar agora. Aguarde um minuto e tente novamente."
-        : "Enviamos uma nova solicitação de confirmação. Use o link mais recente.",
+        : "Solicitamos o reenvio da confirmação. Se a conta ainda não estiver confirmada, confira seu e-mail e use o link mais recente.",
     );
     setBusy(false);
   }
@@ -628,11 +646,7 @@ export default function AccountPage() {
               <span className="email-illustration">
                 ✉️<b>✓</b>
               </span>
-              <h2>
-                Um convite chegou
-                <br />
-                no seu e-mail 💌
-              </h2>
+              <h2>Confirme seu e-mail 💌</h2>
               <p>
                 Confira a caixa de entrada de <strong>{pending}</strong>.
               </p>

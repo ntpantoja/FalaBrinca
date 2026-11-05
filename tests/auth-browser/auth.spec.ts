@@ -38,7 +38,16 @@ async function authMock(page: Page) {
   await page.route("http://127.0.0.1:5400/auth/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/signup"))
-      return route.fulfill({ json: { user, session: null } });
+      return route.fulfill({
+        json: {
+          user: {
+            ...user,
+            email_confirmed_at: null,
+            identities: [{ id: "new-email-identity", provider: "email" }],
+          },
+          session: null,
+        },
+      });
     if (path.endsWith("/token")) return route.fulfill({ json: session });
     if (path.endsWith("/user")) return route.fulfill({ json: user });
     return route.fulfill({ json: {} });
@@ -86,7 +95,7 @@ test("e-mail confirmado leva ao perfil, sem novo login; nomes, pagamento e saíd
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Criar minha conta" }).click();
   await expect(
-    page.getByRole("heading", { name: /Um convite chegou/ }),
+    page.getByRole("heading", { name: /Confirme seu e-mail/ }),
   ).toBeVisible();
   await expect(page.locator(".email-check")).toContainText(
     "primeiro nome da criança",
@@ -108,6 +117,51 @@ test("e-mail confirmado leva ao perfil, sem novo login; nomes, pagamento e saíd
   await page.getByRole("button", { name: "Sair da conta" }).click();
   await expect(page.getByLabel("E-mail", { exact: true })).toBeVisible();
 });
+for (const duplicate of ["obfuscated", "explicit"] as const) {
+  test(`cadastro existente mostra aviso e abre login: ${duplicate}`, async ({
+    page,
+  }) => {
+    await authMock(page);
+    await page.route("http://127.0.0.1:5400/auth/v1/signup**", (route) =>
+      route.fulfill(
+        duplicate === "explicit"
+          ? {
+              status: 422,
+              json: {
+                error_code: "user_already_exists",
+                msg: "User already registered",
+              },
+            }
+          : { json: { user, session: null } },
+      ),
+    );
+    await page.goto("/");
+    await page.getByLabel("E-mail", { exact: true }).fill(user.email);
+    await page.getByLabel(/^Senha/).fill("SenhaTeste123!");
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Criar minha conta" }).click();
+    await expect(page.getByRole("status")).toContainText(
+      "Este e-mail já está cadastrado",
+    );
+    await expect(
+      page.getByRole("heading", { name: "Bom ter você de volta!" }),
+    ).toBeVisible();
+    await expect(page.getByLabel("E-mail", { exact: true })).toHaveValue(
+      user.email,
+    );
+    await expect(page.getByLabel(/^Senha/)).toHaveValue("");
+    await expect(page.locator(".email-check")).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page.evaluate(() => sessionStorage.getItem("falabrinca-pending-email")),
+      )
+      .toBeNull();
+    await page.getByRole("button", { name: "Esqueci minha senha" }).click();
+    await expect(
+      page.getByRole("button", { name: "Enviar instruções" }),
+    ).toBeVisible();
+  });
+}
 test("Google encaminha ao provedor com retorno para o cadastro — autorização não é simulada como login real", async ({
   page,
 }) => {
