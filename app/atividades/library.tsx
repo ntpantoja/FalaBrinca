@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { unlockActivityAudio } from "../../lib/activity-audio-player";
 import { useEffect, useRef, useState } from "react";
 import {
   Play,
@@ -158,6 +159,7 @@ export default function Library({
     setMessage("");
   }
   async function start(adventure: Adventure) {
+    if (progress.sound) unlockActivityAudio();
     setBusy(true);
     setMessage("");
     try {

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { activityAudioPlayer } from "./activity-audio-player";
 /** One playback channel per activity; stale failures cannot restart old audio. */
 export function useActivityAudio(sound: boolean, volume = 1, rate = 0.8) {
   const player = useRef<HTMLAudioElement | null>(null);
@@ -7,6 +8,7 @@ export function useActivityAudio(sound: boolean, volume = 1, rate = 0.8) {
   function stop() {
     version.current++;
     if (player.current) {
+      player.current.onerror = null;
       player.current.pause();
       player.current.removeAttribute("src");
       player.current.load();
@@ -30,8 +32,9 @@ export function useActivityAudio(sound: boolean, volume = 1, rate = 0.8) {
       window.speechSynthesis.speak(utterance);
     }
     if (!audioUrl) return fallback();
-    const audio = new Audio(audioUrl);
+    const audio = activityAudioPlayer();
     player.current = audio;
+    audio.src = audioUrl;
     audio.volume = volume;
     // Preserve the recorded voice's natural pace and pitch.
     let failed = false;

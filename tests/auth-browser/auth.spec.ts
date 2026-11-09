@@ -883,7 +883,7 @@ test("master grava áudio com MediaRecorder, confere prévia e salva na figura �
   ).toBe(400);
 });
 
-test("atividade prioriza gravação no botão ouvir e usa voz automática nas figuras sem áudio", async ({
+test("atividade inicia gravação automaticamente e narra a próxima figura sem botão ouvir", async ({
   page,
 }) => {
   await paidApp(page);
@@ -931,14 +931,13 @@ test("atividade prioriza gravação no botão ouvir e usa voz automática nas fi
   await page
     .getByRole("button", { name: `Jogar ${catalog[0].title}`, exact: true })
     .click();
-  await page
-    .getByRole("button", { name: "Ouvir a palavra", exact: true })
-    .click();
-  expect(
-    await page.evaluate(
-      () => (window as unknown as { testAudio: string[] }).testAudio,
-    ),
-  ).toContain("https://media.example.test/gravado.webm");
+  await expect
+    .poll(async () =>
+      page.evaluate(
+        () => (window as unknown as { testAudio: string[] }).testAudio,
+      ),
+    )
+    .toContain("https://media.example.test/gravado.webm");
   expect(
     await page.evaluate(
       () => (window as unknown as { testSpoken: string[] }).testSpoken,
@@ -946,9 +945,6 @@ test("atividade prioriza gravação no botão ouvir e usa voz automática nas fi
   ).toHaveLength(0);
   await page.getByRole("button", { name: first.answer, exact: true }).click();
   await page.getByRole("button", { name: "Pratiquei esta palavra!" }).click();
-  await page
-    .getByRole("button", { name: "Ouvir a palavra", exact: true })
-    .click();
   expect(
     (
       await page.evaluate(

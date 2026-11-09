@@ -14,7 +14,7 @@
 4. Fale apenas a palavra ou uma frase curta. Clique em **Parar gravação**; o limite automático é 20 segundos e 3 MB.
 5. Ouça a prévia. Clique em **Usar este áudio** para enviar, ou **Descartar** para refazer.
 6. Clique em **Salvar atividade**. Se desejar disponibilizar aos assinantes, mantenha a atividade publicada.
-7. Abra a atividade e toque no alto-falante para ouvir sua gravação.
+7. Abra a atividade: com o som ativado, a gravação começa automaticamente e cada nova figura também é narrada. O alto-falante permite ouvir novamente.
 
 É possível ouvir o áudio salvo, gravar novamente ou removê-lo para voltar à voz automática. Cada figura em cada rodada tem seu próprio vínculo: gravar uma figura não altera automaticamente as outras aparições dela. A voz gravada mantém o ritmo natural; o volume e o botão de som das configurações são respeitados.
 
