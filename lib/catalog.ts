@@ -243,7 +243,12 @@ export const kindLabels: Record<ActivityKind, string> = {
   association: "Fazer associações",
   sentence: "Contar histórias em imagens",
 };
-export type Choice = { name: string; emoji: string; image_url?: string };
+export type Choice = {
+  name: string;
+  emoji: string;
+  image_url?: string;
+  audio_url?: string;
+};
 export type Round = {
   prompt: string;
   hint: string;

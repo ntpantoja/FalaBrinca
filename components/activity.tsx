@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { ActivityContent, Adventure } from "../lib/catalog";
 import { sequencePictures } from "../lib/pictures";
+import { useActivityAudio } from "../lib/use-activity-audio";
 import { Picture } from "./picture";
 export function Activity({
   adventure,
@@ -40,15 +41,14 @@ export function Activity({
   const choices = sentence
     ? [...sequence.slice(1), sequence[0]]
     : round.choices;
-  function speak(text: string) {
-    if (!sound || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const voice = new SpeechSynthesisUtterance(text);
-    voice.lang = "pt-BR";
-    voice.rate = voiceSettings?.rate ?? 0.8;
-    voice.volume = voiceSettings?.volume ?? 1;
-    window.speechSynthesis.speak(voice);
-  }
+  const { speak, stop } = useActivityAudio(
+    sound,
+    voiceSettings?.volume ?? 1,
+    voiceSettings?.rate ?? 0.8,
+  );
+  const targetAudio = round.choices.find(
+    (c) => c.name === round.answer,
+  )?.audio_url;
   useEffect(() => {
     speak(
       sentence
@@ -56,10 +56,9 @@ export function Activity({
         : adventure.difficulty === "beginner"
           ? `${round.answer}. Repita comigo: ${round.answer}. Depois, toque na mão para escolher a figura.`
           : round.prompt,
+      adventure.difficulty === "beginner" ? targetAudio : undefined,
     );
-    return () => {
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    };
+    return stop;
   }, [step, sound]);
   function choose(name: string) {
     if (correct || paused) return;
@@ -67,10 +66,16 @@ export function Activity({
       round.answer,
       sentence ? name === sequence[words.length].name : name === round.answer,
     );
+    const selectedAudio = choices.find(
+      (choice) => choice.name === name,
+    )?.audio_url;
     if (sentence) {
       if (name !== sequence[words.length].name) {
         setFeedback("Vamos tentar outra figura.");
-        speak("Vamos por partes? Escolha a próxima figura da história.");
+        speak(
+          "Vamos por partes? Escolha a próxima figura da história.",
+          selectedAudio,
+        );
         return;
       }
       const next = [...words, name];
@@ -78,20 +83,27 @@ export function Activity({
       if (next.length === sequence.length) {
         setCorrect(true);
         setFeedback("História completa!");
-        speak(`Muito bem! ${round.answer}. Que tal contar juntos?`);
+        speak(
+          `Muito bem! ${round.answer}. Que tal contar juntos?`,
+          selectedAudio,
+        );
       } else {
         setFeedback("Isso! Qual figura vem agora?");
-        speak("Isso! Qual figura vem agora?");
+        speak("Isso! Qual figura vem agora?", selectedAudio);
       }
     } else if (name === round.answer) {
       setCorrect(true);
       setFeedback("Isso!");
       speak(
         `Isso! ${round.answer.toLowerCase()}. Que tal falar com seu adulto?`,
+        targetAudio,
       );
     } else {
       setFeedback("Vamos tentar de novo.");
-      speak("Vamos tentar de novo? Observe as figuras com seu adulto.");
+      speak(
+        "Vamos tentar de novo? Observe as figuras com seu adulto.",
+        selectedAudio,
+      );
     }
   }
   function next() {
@@ -140,7 +152,7 @@ export function Activity({
           onClick={() => {
             setPaused(true);
             onPause?.(true);
-            speak("Uma pausa faz bem.");
+            stop();
           }}
         >
           Ⅱ
@@ -170,6 +182,7 @@ export function Activity({
                 : adventure.difficulty === "beginner"
                   ? `${round.answer}. Repita comigo: ${round.answer}.`
                   : round.prompt,
+              adventure.difficulty === "beginner" ? targetAudio : undefined,
             )
           }
         >

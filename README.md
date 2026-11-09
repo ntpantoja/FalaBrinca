@@ -83,3 +83,5 @@ O aplicativo continua instalável em HTTPS. Cadastro, pagamento e prática preci
 O primeiro nome da criança e o nome do responsável ficam no perfil autenticado, não no cache offline. Cartões são processados pelo Stripe. A voz usa recursos do navegador/dispositivo. As ilustrações da biblioteca ficam em um bucket público e não devem conter dados pessoais.
 
 Antes de vender, mantenha identificação comercial e atendimento publicados, termos e privacidade revisados, SMTP, limites de autenticação, proteção contra abuso e monitoramento configurados. Não há reembolso automático, exclusão autônoma de conta ou sincronização do progresso nesta versão.
+
+Para gravar a pronúncia de cada figura no painel master, siga [Gravar áudio das figuras](GRAVAR-AUDIO-DAS-FIGURAS.md). Em instalações existentes, execute `supabase/recorded-audio-migration.sql` uma vez no Supabase.

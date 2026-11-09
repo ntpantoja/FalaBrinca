@@ -70,7 +70,6 @@ export default function Library({
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("Explorador");
-  const [speech, setSpeech] = useState(false);
   const [category, setCategory] = useState<Category>("animals");
   const [difficulty, setDifficulty] =
     useState<Adventure["difficulty"]>("beginner");
@@ -89,7 +88,6 @@ export default function Library({
   useEffect(() => {
     setProgress(readProgress());
     setReady(true);
-    setSpeech("speechSynthesis" in window);
     const auth = browserAuth();
     if (auth)
       void auth.auth.getSession().then(async ({ data: { session } }) => {
@@ -301,7 +299,7 @@ export default function Library({
             adventure={game.adventure}
             content={game.content}
             settings={progress.practice}
-            sound={speech && progress.sound}
+            sound={progress.sound}
             onExit={() => navigate("activities")}
             onAttempt={attempt}
             onWord={practiced}
@@ -314,7 +312,7 @@ export default function Library({
               key={game.adventure.id}
               adventure={game.adventure}
               content={game.content}
-              sound={speech && progress.sound}
+              sound={progress.sound}
               voiceSettings={progress.practice}
               onExit={() => navigate("activities")}
               onAttempt={attempt}

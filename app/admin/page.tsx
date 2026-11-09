@@ -10,6 +10,7 @@ import {
   type Difficulty,
 } from "../../lib/content-validation";
 import { type Choice, type Round } from "../../lib/catalog";
+import { AudioRecorder } from "../../components/audio-recorder";
 import { Activity } from "../../components/activity";
 const blankRound = (): Round => ({
   prompt: "Ouça e repita a palavra. Depois selecione a figura.",
@@ -160,7 +161,7 @@ export default function Admin() {
   }
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (!editor) return;
+    if (!editor || busy || uploading) return;
     const data = validateActivity(editor);
     if (!data) {
       setMessage(
@@ -362,6 +363,7 @@ export default function Admin() {
               <label>
                 Dificuldade
                 <select
+                  disabled={uploading || busy}
                   value={editor.difficulty}
                   onChange={(e) => changeLevel(e.target.value as Difficulty)}
                 >
@@ -538,6 +540,24 @@ export default function Admin() {
                           Usar apenas o desenho/emoji
                         </button>
                       )}
+                      <AudioRecorder
+                        name={choice.name}
+                        value={choice.audio_url}
+                        disabled={busy || uploading}
+                        onBusy={setUploading}
+                        onChange={(url) =>
+                          updateChoice(index, choiceIndex, { audio_url: url })
+                        }
+                        upload={async (file) => {
+                          const form = new FormData();
+                          form.set("file", file);
+                          const data = await api("/api/admin/audio", {
+                            method: "POST",
+                            body: form,
+                          });
+                          return data.url;
+                        }}
+                      />
                       {editor.kind !== "sentence" && (
                         <label className="checkbox">
                           <input
@@ -557,7 +577,9 @@ export default function Admin() {
                 <button
                   type="button"
                   className="back"
-                  disabled={editor.content.rounds.length === 1}
+                  disabled={
+                    uploading || busy || editor.content.rounds.length === 1
+                  }
                   onClick={() =>
                     setEditor({
                       ...editor,
@@ -578,7 +600,9 @@ export default function Admin() {
               <button
                 type="button"
                 className="secondary"
-                disabled={editor.content.rounds.length >= 12}
+                disabled={
+                  uploading || busy || editor.content.rounds.length >= 12
+                }
                 onClick={() =>
                   setEditor({
                     ...editor,
@@ -708,7 +732,7 @@ export default function Admin() {
               key={preview.id}
               adventure={preview}
               content={preview.content}
-              sound={"speechSynthesis" in window}
+              sound={true}
               onExit={() => setPreview(null)}
               onComplete={() => {
                 setPreview(null);

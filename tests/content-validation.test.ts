@@ -46,3 +46,28 @@ test("editor rejeita categorias, níveis, imagens inseguras e respostas ambígua
   assert.equal(safeMediaUrl("http://exemplo.com/a.png"), false);
   assert.equal(safeMediaUrl("https://exemplo.com/a.png"), true);
 });
+
+test("áudios gravados são preservados nas figuras e sequências; URLs inseguras são rejeitadas", () => {
+  const a = structuredClone(example());
+  a.content.rounds[0].choices[0].audio_url =
+    "https://example.com/words/gato.webm";
+  assert.equal(
+    validateActivity(a)?.content.rounds[0].choices[0].audio_url,
+    "https://example.com/words/gato.webm",
+  );
+  a.content.rounds[0].choices[0].audio_url = "javascript:alert(1)";
+  assert.equal(validateActivity(a), null);
+  const advanced = catalog.find((c) => c.kind === "sentence")!;
+  const round = allContent[advanced.id].rounds[0];
+  const sequence = sequencePictures(round.words!);
+  sequence[0].audio_url = "https://example.com/palavra.m4a";
+  const result = validateActivity({
+    ...advanced,
+    published: true,
+    content: { id: advanced.id, rounds: [{ ...round, sequence }] },
+  });
+  assert.equal(
+    result?.content.rounds[0].sequence?.[0].audio_url,
+    sequence[0].audio_url,
+  );
+});

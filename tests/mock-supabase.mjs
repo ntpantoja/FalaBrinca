@@ -31,6 +31,15 @@ const server = http.createServer(async (req, res) => {
     if (token === "member-fixture") return send(200, user(member));
     return send(401, { msg: "Token de teste inválido" });
   }
+  if (
+    url.pathname.startsWith("/storage/v1/object/activity-audio/") &&
+    req.method === "POST"
+  ) {
+    for await (const chunk of req) {
+      /* consume fixture upload */
+    }
+    return send(200, { Key: url.pathname.split("/object/")[1] });
+  }
   if (!url.pathname.startsWith("/rest/v1/")) return send(404, {});
   const table = url.pathname.split("/").pop();
   if (table !== "learning_activities") return send(200, []);

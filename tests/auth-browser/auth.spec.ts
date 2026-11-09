@@ -758,3 +758,202 @@ test("imagem indisponível mostra desenho alternativo e não quebra a atividade"
   await expect(page.locator(".word-hero-card")).toContainText("🍎");
   await expect(page.locator(".word-hero-card img")).toHaveCount(0);
 });
+
+test("master grava áudio com MediaRecorder, confere prévia e salva na figura — armazenamento local simulado", async ({
+  page,
+  request,
+}) => {
+  const owner = {
+    ...user,
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    email: "master@example.test",
+  };
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    { ...session, access_token: "master-fixture", user: owner },
+  );
+  await page.route("http://127.0.0.1:5400/auth/v1/user", (route) =>
+    route.fulfill({ json: owner }),
+  );
+  // The fixture Storage host is HTTP; production Storage URLs are HTTPS.
+  await page.route("**/api/admin/audio", async (route) => {
+    const response = await route.fetch();
+    expect(response.status()).toBe(200);
+    const result = await response.json();
+    expect(result.url).toContain("activity-audio/words/");
+    await route.fulfill({
+      json: { url: "https://media.example.test/palavra.webm" },
+    });
+  });
+  await page.route("https://media.example.test/**", (route) =>
+    route.fulfill({ status: 204 }),
+  );
+  await page.goto("/admin");
+  await page
+    .getByRole("button", { name: "+ Nova atividade", exact: true })
+    .click();
+  await page.getByLabel("Título do card").fill("Figuras com minha voz");
+  const audio = page.getByRole("region", {
+    name: "Áudio de GATO",
+    exact: true,
+  });
+  await audio
+    .getByRole("button", { name: "Gravar áudio", exact: true })
+    .click();
+  await expect(audio.getByRole("status")).toContainText("Gravando 1/20", {
+    timeout: 10000,
+  });
+  await expect(
+    page.getByRole("button", { name: "Salvar atividade", exact: true }),
+  ).toBeDisabled();
+  await audio
+    .getByRole("button", { name: "Parar gravação", exact: true })
+    .click();
+  await expect(audio.getByLabel("Ouvir nova gravação de GATO")).toHaveAttribute(
+    "src",
+    /^blob:/,
+  );
+  await page.screenshot({
+    path: "/tmp/falabrinca-gravar-audio.png",
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await audio
+    .getByRole("button", { name: "Usar este áudio", exact: true })
+    .click();
+  await expect(audio.getByLabel("Ouvir áudio salvo de GATO")).toHaveAttribute(
+    "src",
+    "https://media.example.test/palavra.webm",
+  );
+  await page
+    .getByRole("button", { name: "Salvar atividade", exact: true })
+    .click();
+  const row = page.locator(".admin-activity-list article").filter({
+    has: page.getByRole("heading", {
+      name: "Figuras com minha voz",
+      exact: true,
+    }),
+  });
+  await row.getByRole("button", { name: "Editar", exact: true }).click();
+  await expect(page.getByLabel("Ouvir áudio salvo de GATO")).toHaveAttribute(
+    "src",
+    "https://media.example.test/palavra.webm",
+  );
+  await page
+    .getByRole("button", { name: "Remover áudio", exact: true })
+    .click();
+  await expect(page.getByLabel("Ouvir áudio salvo de GATO")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Salvar atividade", exact: true })
+    .click();
+  const headers = {
+    Authorization: "Bearer member-fixture",
+    Origin: "http://localhost:3101",
+  };
+  expect((await request.post("/api/admin/audio", { headers })).status()).toBe(
+    403,
+  );
+  expect(
+    (
+      await request.post("/api/admin/audio", {
+        headers: {
+          Authorization: "Bearer master-fixture",
+          Origin: "https://estranho.example",
+        },
+      })
+    ).status(),
+  ).toBe(403);
+  expect(
+    (
+      await request.post("/api/admin/audio", {
+        headers: { ...headers, Authorization: "Bearer master-fixture" },
+        multipart: {
+          file: {
+            name: "falso.webm",
+            mimeType: "audio/webm",
+            buffer: Buffer.from("isto nao e um audio"),
+          },
+        },
+      })
+    ).status(),
+  ).toBe(400);
+});
+
+test("atividade prioriza gravação no botão ouvir e usa voz automática nas figuras sem áudio", async ({
+  page,
+}) => {
+  await paidApp(page);
+  await page.addInitScript(() => {
+    Object.assign(window, {
+      testAudio: [] as string[],
+      testSpoken: [] as string[],
+    });
+    HTMLMediaElement.prototype.play = function () {
+      (window as unknown as { testAudio: string[] }).testAudio.push(this.src);
+      return Promise.resolve();
+    };
+    window.speechSynthesis.speak = (u) => {
+      (window as unknown as { testSpoken: string[] }).testSpoken.push(u.text);
+    };
+  });
+  const withAudio = structuredClone(content[catalog[0].id]);
+  const first = withAudio.rounds[0];
+  first.choices.find((c) => c.name === first.answer)!.audio_url =
+    "https://media.example.test/gravado.webm";
+  await page.route(`**/api/activities/${catalog[0].id}`, (r) =>
+    r.fulfill({ json: withAudio }),
+  );
+  const wav = Buffer.alloc(3244);
+  wav.write("RIFF", 0);
+  wav.writeUInt32LE(3236, 4);
+  wav.write("WAVEfmt ", 8);
+  wav.writeUInt32LE(16, 16);
+  wav.writeUInt16LE(1, 20);
+  wav.writeUInt16LE(1, 22);
+  wav.writeUInt32LE(8000, 24);
+  wav.writeUInt32LE(16000, 28);
+  wav.writeUInt16LE(2, 32);
+  wav.writeUInt16LE(16, 34);
+  wav.write("data", 36);
+  wav.writeUInt32LE(3200, 40);
+  await page.route("https://media.example.test/**", (r) =>
+    r.fulfill({ contentType: "audio/wav", body: wav }),
+  );
+  await page.goto("/atividades");
+  await page
+    .getByRole("button", { name: "Começar Atividade", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Alimentos", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Jogar ${catalog[0].title}`, exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "Ouvir a palavra", exact: true })
+    .click();
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { testAudio: string[] }).testAudio,
+    ),
+  ).toContain("https://media.example.test/gravado.webm");
+  expect(
+    await page.evaluate(
+      () => (window as unknown as { testSpoken: string[] }).testSpoken,
+    ),
+  ).toHaveLength(0);
+  await page.getByRole("button", { name: first.answer, exact: true }).click();
+  await page.getByRole("button", { name: "Pratiquei esta palavra!" }).click();
+  await page
+    .getByRole("button", { name: "Ouvir a palavra", exact: true })
+    .click();
+  expect(
+    (
+      await page.evaluate(
+        () => (window as unknown as { testSpoken: string[] }).testSpoken,
+      )
+    ).join(" "),
+  ).toContain(withAudio.rounds[1].answer);
+});

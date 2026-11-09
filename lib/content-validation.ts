@@ -43,7 +43,12 @@ const drawing = (value: unknown, max = 16) =>
 function choice(v: unknown): v is Choice {
   if (!v || typeof v !== "object") return false;
   const c = v as Choice;
-  return text(c.name, 1, 60) && drawing(c.emoji) && safeMediaUrl(c.image_url);
+  return (
+    text(c.name, 1, 60) &&
+    drawing(c.emoji) &&
+    safeMediaUrl(c.image_url) &&
+    safeMediaUrl(c.audio_url)
+  );
 }
 export function validateActivity(input: unknown): ManagedActivity | null {
   if (!input || typeof input !== "object") return null;
@@ -107,6 +112,7 @@ export function validateActivity(input: unknown): ManagedActivity | null {
           name: c.name.trim(),
           emoji: c.emoji,
           image_url: c.image_url || undefined,
+          audio_url: c.audio_url || undefined,
         })),
       });
     } else {
@@ -128,6 +134,7 @@ export function validateActivity(input: unknown): ManagedActivity | null {
           name: c.name.trim(),
           emoji: c.emoji,
           image_url: c.image_url || undefined,
+          audio_url: c.audio_url || undefined,
         })),
       });
     }

@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import type { Adventure, ActivityContent, Choice } from "../lib/catalog";
+import { useActivityAudio } from "../lib/use-activity-audio";
 import { Picture } from "./picture";
 import { categories } from "../lib/content-validation";
 import type { PracticeData } from "../lib/practice-progress";
@@ -57,27 +58,17 @@ export function WordPractice({
   const practiced = useRef(new Set<number>());
   const round = content.rounds[step];
   const target = round.choices.find((c) => c.name === round.answer)!;
-  function speak(text: string) {
-    if (!sound || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "pt-BR";
-    const voices = window.speechSynthesis.getVoices();
-    const voice =
-      voices.find((v) => v.lang.toLowerCase() === "pt-br") ??
-      voices.find((v) => v.lang.toLowerCase().startsWith("pt"));
-    if (voice) utterance.voice = voice;
-    utterance.rate = settings.rate;
-    utterance.volume = settings.volume;
-    window.speechSynthesis.speak(utterance);
-  }
+  const { speak, stop } = useActivityAudio(
+    sound,
+    settings.volume,
+    settings.rate,
+  );
   useEffect(() => {
     speak(
       `${round.answer}. Repita comigo: ${round.answer}. Agora escolha o desenho igual ao de cima.`,
+      target.audio_url,
     );
-    return () => {
-      if ("speechSynthesis" in window) window.speechSynthesis.cancel();
-    };
+    return stop;
   }, [step, sound]);
   function go(index: number) {
     setStep(index);
@@ -93,7 +84,7 @@ export function WordPractice({
     if (correct) {
       setStage("success");
       setFeedback("Isso! Você encontrou a figura.");
-      speak(`Isso! ${round.answer}.`);
+      speak(`Isso! ${round.answer}.`, target.audio_url);
     } else {
       setStage("retry");
       setFeedback("Vamos tentar de novo?");
@@ -206,7 +197,10 @@ export function WordPractice({
           aria-label="Ouvir a palavra"
           disabled={!sound}
           onClick={() =>
-            speak(`${round.answer}. Repita comigo: ${round.answer}.`)
+            speak(
+              `${round.answer}. Repita comigo: ${round.answer}.`,
+              target.audio_url,
+            )
           }
         >
           <Volume2 size={29} />
@@ -247,7 +241,7 @@ export function WordPractice({
           onClick={() => {
             setPaused(true);
             onPause(true);
-            if ("speechSynthesis" in window) window.speechSynthesis.cancel();
+            stop();
           }}
         >
           <Pause size={17} /> Pausa
