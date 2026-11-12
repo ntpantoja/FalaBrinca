@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { authenticatedFetch, SessionExpiredError } from "../../lib/session";
 import { unlockActivityAudio } from "../../lib/activity-audio-player";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -163,16 +164,9 @@ export default function Library({
     setBusy(true);
     setMessage("");
     try {
-      const auth = browserAuth();
-      const session = auth ? (await auth.auth.getSession()).data.session : null;
-      if (!session) {
-        window.location.replace("/conta?modo=login");
-        return;
-      }
-      const response = await fetch(`/api/activities/${adventure.id}`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: "no-store",
-      });
+      const response = await authenticatedFetch(
+        `/api/activities/${adventure.id}`,
+      );
       const data = await response.json();
       if (response.status === 428) {
         window.location.replace("/dispositivos");
@@ -198,6 +192,10 @@ export default function Library({
       setGame({ adventure, content: data });
       setReward(null);
     } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        window.location.replace("/conta?modo=login");
+        return;
+      }
       setMessage(
         e instanceof Error ? e.message : "Não foi possível abrir a atividade.",
       );
@@ -422,7 +420,7 @@ export default function Library({
             {role === "master" && (
               <Link className="master-shortcut" href="/admin">
                 <ShieldCheck size={16} />
-                Painel master · editar atividades
+                Painel master · dashboard
               </Link>
             )}
           </div>

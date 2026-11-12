@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
+import { authenticatedFetch, SessionExpiredError } from "../../lib/session";
 import { useEffect, useState } from "react";
-import { browserAuth } from "../../lib/supabase-browser";
 type Device = { id: string; label: string; current: boolean; lastSeen: string };
 export default function DevicesPage() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -9,23 +9,21 @@ export default function DevicesPage() {
   const [busy, setBusy] = useState(false);
   const [ready, setReady] = useState(false);
   async function api(method = "GET", id?: string) {
-    const session = (await browserAuth()?.auth.getSession())?.data.session;
-    if (!session) {
-      window.location.replace("/conta?modo=login");
-      throw new Error("Entre na conta para continuar.");
-    }
-    const response = await fetch(
-      `/api/devices${method === "POST" ? "?reactivate=1" : ""}`,
-      {
-        method,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
+    let response: Response;
+    try {
+      response = await authenticatedFetch(
+        `/api/devices${method === "POST" ? "?reactivate=1" : ""}`,
+        {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: id ? JSON.stringify({ id }) : undefined,
         },
-        body: id ? JSON.stringify({ id }) : undefined,
-        cache: "no-store",
-      },
-    );
+      );
+    } catch (error) {
+      if (error instanceof SessionExpiredError)
+        window.location.replace("/conta?modo=login");
+      throw error;
+    }
     const data = await response.json();
     if (!response.ok) throw new Error(data.error);
     return data;

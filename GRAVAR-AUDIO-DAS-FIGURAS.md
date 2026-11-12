@@ -9,7 +9,7 @@
 ## Gravar pelo painel master
 
 1. Abra https://falabrinca-43kf.vercel.app/admin com sua conta master.
-2. Clique em **Editar** na atividade desejada.
+2. Abra **Gestão de conteúdo** e clique em **Editar** na atividade desejada.
 3. Na imagem, encontre **Pronúncia gravada → Gravar áudio** e permita o microfone no navegador.
 4. Fale apenas a palavra ou uma frase curta. Clique em **Parar gravação**; o limite automático é 20 segundos e 3 MB.
 5. Ouça a prévia. Clique em **Usar este áudio** para enviar, ou **Descartar** para refazer.

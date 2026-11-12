@@ -1,752 +1,400 @@
 "use client";
 import Link from "next/link";
+import { authenticatedFetch } from "../../lib/session";
 import { useEffect, useState, type FormEvent } from "react";
 import { browserAuth } from "../../lib/supabase-browser";
-import {
-  categories,
-  difficulties,
-  validateActivity,
-  type ManagedActivity,
-  type Difficulty,
-} from "../../lib/content-validation";
-import { type Choice, type Round } from "../../lib/catalog";
-import { AudioRecorder } from "../../components/audio-recorder";
-import { Activity } from "../../components/activity";
-const blankRound = (): Round => ({
-  prompt: "Ouça e repita a palavra. Depois selecione a figura.",
-  hint: "Repita com a criança, sem cobrar a pronúncia.",
-  answer: "GATO",
-  choices: [
-    { name: "GATO", emoji: "🐱" },
-    { name: "CACHORRO", emoji: "🐶" },
-    { name: "COELHO", emoji: "🐰" },
-  ],
-});
-const blank = (): ManagedActivity => ({
-  id: `atividade-${Date.now().toString(36)}`,
-  title: "",
-  description: "Ouça a palavra, repita com um adulto e selecione a figura.",
-  emoji: "🐱",
-  color: "mint",
-  kind: "figures",
-  category: "animals",
-  difficulty: "beginner",
-  minutes: 1,
-  published: false,
-  revision: 1,
-  content: { id: "", rounds: [blankRound()] },
-});
-export default function Admin() {
-  const [activities, setActivities] = useState<ManagedActivity[]>([]);
-  const [allowed, setAllowed] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+import { PLANS, type PlanId } from "../../lib/plan";
+import { estimateSales } from "../../lib/commercial";
+const money = (cents: number) =>
+  (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const date = (value?: string | null) =>
+  value
+    ? new Date(value).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
+    : "—";
+type Customer = {
+  id: string;
+  email: string;
+  guardian_name?: string;
+  created_at: string;
+  last_sign_in_at?: string;
+  last_seen_at?: string;
+  tracked_logins: number;
+  devices: number;
+  plan?: PlanId;
+  active: boolean;
+  buyer: boolean;
+  status: string;
+  pass_end?: string;
+  period_end?: number;
+  cancel_at_period_end: boolean;
+};
+type Metrics = {
+  registered: number;
+  loggedIn: number;
+  buyers: number;
+  withoutPurchase: number;
+  active: number;
+  monthly: number;
+  annual: number;
+  yearlyPass: number;
+  mrrCents: number;
+  passMonthlyEquivalentCents: number;
+  grossCents: number;
+  refundedCents: number;
+  netBeforeFeesCents: number;
+  firstRecordedPayment?: string;
+};
+type Dashboard = {
+  customers: Customer[];
+  metrics: Metrics;
+  total: number;
+  pageSize: number;
+  generatedAt: string;
+};
+export default function MasterDashboard() {
+  const [data, setData] = useState<Dashboard | null>(null);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("all");
   const [message, setMessage] = useState("");
-  const [editor, setEditor] = useState<ManagedActivity | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [query, setQuery] = useState("");
-  const [preview, setPreview] = useState<ManagedActivity | null>(null);
-  const [uploading, setUploading] = useState(false);
-  async function api(path: string, options: RequestInit = {}) {
-    const auth = browserAuth();
-    const session = auth ? (await auth.auth.getSession()).data.session : null;
-    if (!session)
-      throw new Error(
-        "Entre na conta do proprietário para acessar o painel master.",
-      );
-    const response = await fetch(path, {
-      ...options,
-      headers: {
-        Authorization: `Bearer ${session.access_token}`,
-        ...options.headers,
-      },
-      cache: "no-store",
-    });
-    const data = await response.json();
-    if (!response.ok)
-      throw new Error(data.error || "Não foi possível concluir.");
-    return data;
-  }
-  async function load() {
-    setLoading(true);
+  const [busy, setBusy] = useState(false);
+  const [scenario, setScenario] = useState({
+    monthly: 10,
+    annual: 5,
+    fixed: 0,
+    fees: 0,
+    perAccount: 0,
+  });
+  async function load(requestedPage = page) {
+    setBusy(true);
+    setMessage("");
     try {
-      const data = await api("/api/admin/activities");
-      setActivities(data.activities);
-      setAllowed(true);
-    } catch (e) {
-      setAllowed(false);
+      const response = await authenticatedFetch(
+        `/api/admin/customers?${new URLSearchParams({ page: String(requestedPage), search, filter })}`,
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error);
+      setData(result);
+      setPage(requestedPage);
+    } catch (error) {
+      setData(null);
       setMessage(
-        e instanceof Error ? e.message : "Não foi possível carregar o painel.",
+        error instanceof Error
+          ? error.message
+          : "Não foi possível consultar clientes.",
       );
     } finally {
-      setLoading(false);
+      setBusy(false);
     }
   }
   useEffect(() => {
-    void load();
+    void load(1);
   }, []);
-  function patchRound(index: number, update: Partial<Round>) {
-    setEditor((current) =>
-      current
-        ? {
-            ...current,
-            content: {
-              ...current.content,
-              rounds: current.content.rounds.map((r, i) =>
-                i === index ? { ...r, ...update } : r,
-              ),
-            },
-          }
-        : null,
-    );
+  const estimate = estimateSales(
+    scenario.monthly,
+    scenario.annual,
+    0,
+    scenario.fixed,
+    scenario.fees,
+    scenario.perAccount,
+  );
+  async function logout() {
+    setBusy(true);
+    setMessage("");
+    try {
+      const auth = browserAuth();
+      if (auth) {
+        const { error } = await auth.auth.signOut({ scope: "local" });
+        if (error) throw error;
+      }
+      window.location.replace("/");
+    } catch {
+      setMessage("Não foi possível sair da conta. Tente novamente.");
+      setBusy(false);
+    }
   }
-  function updateChoice(
-    index: number,
-    choiceIndex: number,
-    update: Partial<Choice>,
-  ) {
-    if (!editor) return;
-    const round = editor.content.rounds[index];
-    const sequence = editor.kind === "sentence";
-    const list = sequence ? round.sequence! : round.choices;
-    const old = list[choiceIndex];
-    const next = list.map((c, i) =>
-      i === choiceIndex ? { ...c, ...update } : c,
-    );
-    patchRound(
-      index,
-      sequence
-        ? { sequence: next }
-        : {
-            choices: next,
-            answer:
-              old.name === round.answer ? next[choiceIndex].name : round.answer,
-          },
-    );
-  }
-  function changeLevel(value: Difficulty) {
-    if (!editor) return;
-    if (
-      !window.confirm(
-        "Mudar o tipo de atividade recria as rodadas do editor. Continuar?",
-      )
-    )
-      return;
-    const kind =
-      value === "beginner"
-        ? "figures"
-        : value === "intermediate"
-          ? "association"
-          : "sentence";
-    const round =
-      kind === "sentence"
-        ? {
-            prompt: "Vamos montar uma história?",
-            hint: "Observe e converse com a criança.",
-            answer: "O gato quer a bola.",
-            choices: [],
-            sequence: [
-              { name: "GATO", emoji: "🐱" },
-              { name: "QUER", emoji: "🤲" },
-              { name: "BOLA", emoji: "⚽" },
-            ],
-          }
-        : blankRound();
-    setEditor({
-      ...editor,
-      difficulty: value,
-      kind,
-      content: { id: editor.id, rounds: [round] },
-    });
-  }
-  async function save(event: FormEvent) {
+  function submit(event: FormEvent) {
     event.preventDefault();
-    if (!editor || busy || uploading) return;
-    const data = validateActivity(editor);
-    if (!data) {
-      setMessage(
-        "Confira os títulos, as imagens e as respostas de cada rodada. Use nomes diferentes para cada opção.",
-      );
-      return;
-    }
-    setBusy(true);
-    try {
-      await api(
-        creating
-          ? "/api/admin/activities"
-          : `/api/admin/activities/${editor.id}`,
-        {
-          method: creating ? "POST" : "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        },
-      );
-      setEditor(null);
-      setMessage(
-        "Atividade salva. Os assinantes verão as alterações ao recarregar a biblioteca.",
-      );
-      await load();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Não foi possível salvar.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function remove(activity: ManagedActivity) {
-    if (
-      !window.confirm(
-        `Apagar “${activity.title}” e suas rodadas? Essa ação remove a atividade da biblioteca.`,
-      )
-    )
-      return;
-    setBusy(true);
-    try {
-      await api(
-        `/api/admin/activities/${activity.id}?revision=${activity.revision}`,
-        { method: "DELETE" },
-      );
-      setMessage("Atividade apagada.");
-      await load();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Não foi possível apagar.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function seed() {
-    if (
-      !window.confirm(
-        "Importar as atividades iniciais? As atividades existentes não serão sobrescritas. Atividades iniciais que você apagou serão recriadas.",
-      )
-    )
-      return;
-    setBusy(true);
-    try {
-      const data = await api("/api/admin/seed", { method: "POST" });
-      setMessage(`${data.imported} atividades importadas.`);
-      await load();
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Falha na importação.");
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function upload(file: File, index: number, choiceIndex: number) {
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.set("file", file);
-      const data = await api("/api/admin/media", {
-        method: "POST",
-        body: form,
-      });
-      updateChoice(index, choiceIndex, { image_url: data.url });
-      setMessage("Ilustração enviada. Salve a atividade para aplicar.");
-    } catch (e) {
-      setMessage(
-        e instanceof Error ? e.message : "Não foi possível enviar a imagem.",
-      );
-    } finally {
-      setUploading(false);
-    }
-  }
-  function showPreview() {
-    const valid = validateActivity(editor);
-    if (!valid) {
-      setMessage("Preencha os campos da atividade antes de abrir a prévia.");
-      return;
-    }
-    setPreview(valid);
+    void load(1);
   }
   return (
-    <>
-      <header className="family-header">
-        <Link className="brand" href="/">
-          FalaBrinca
+    <main className="commercial-page commercial-dashboard">
+      <header>
+        <Link className="brand" href="/admin">
+          FalaBrinca · Master
         </Link>
-        <div className="admin-header-links">
-          <span className="pill">MASTER</span>
-          <Link className="adult-link" href="/admin/clientes">
-            Clientes e vendas
-          </Link>
-          <Link className="adult-link" href="/atividades">
-            Ver biblioteca
-          </Link>
-          <Link className="adult-link" href="/conta">
-            Minha conta
-          </Link>
-        </div>
+        <button
+          className="secondary"
+          disabled={busy}
+          onClick={() => void logout()}
+        >
+          Sair da conta
+        </button>
       </header>
-      <main className="admin-main">
-        <span className="eyebrow">PAINEL DO PROPRIETÁRIO</span>
-        <h1>Seu conteúdo, do seu jeito.</h1>
-        <p>
-          Crie, edite e organize os cards. Alterações publicadas ficam
-          disponíveis para os assinantes ao atualizar a biblioteca.
-        </p>
-        <div className="admin-status" role="status">
-          {message}
+      <h1>Painel master</h1>
+      <p>
+        Acompanhe clientes, acessos e vendas e gerencie o FalaBrinca. Cada
+        pessoa é contada por sua conta, não por dispositivo.
+      </p>
+      <p role="status">{message}</p>
+      {!data && !busy && (
+        <div className="admin-actions">
+          <button className="primary" onClick={() => void load(1)}>
+            Tentar novamente
+          </button>
+          <Link className="secondary" href="/conta?gerenciar=1">
+            Ir para minha conta
+          </Link>
         </div>
-        {loading ? (
-          <p>Carregando…</p>
-        ) : !allowed ? (
-          <div className="notice">
-            <h2>Acesso master necessário</h2>
-            <p>
-              Use sua conta confirmada e vincule o ID do usuário na variável
-              MASTER_USER_ID da Vercel. Se a conta já estiver vinculada, confira
-              a atualização do banco.
-            </p>
-            <Link className="primary" href="/conta?modo=login">
-              Entrar na minha conta
-            </Link>
-            <button className="secondary" onClick={() => void load()}>
-              Verificar acesso novamente
-            </button>
-          </div>
-        ) : editor ? (
-          <form className="admin-editor" onSubmit={save}>
-            <div className="admin-editor-heading">
-              <h2>{creating ? "Criar atividade" : "Editar atividade"}</h2>
-              <button
-                type="button"
-                className="back"
-                onClick={() => {
-                  if (
-                    window.confirm("Sair do editor sem salvar as alterações?")
-                  )
-                    setEditor(null);
-                }}
-              >
-                Voltar à lista
-              </button>
-            </div>
-            <div className="editor-grid">
-              <label>
-                Título do card
-                <input
-                  required
-                  minLength={3}
-                  maxLength={80}
-                  value={editor.title}
-                  onChange={(e) =>
-                    setEditor({ ...editor, title: e.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Figura do card
-                <input
-                  required
-                  maxLength={16}
-                  value={editor.emoji}
-                  onChange={(e) =>
-                    setEditor({ ...editor, emoji: e.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Categoria
-                <select
-                  value={editor.category}
-                  onChange={(e) =>
-                    setEditor({
-                      ...editor,
-                      category: e.target.value as ManagedActivity["category"],
-                    })
-                  }
-                >
-                  {Object.entries(categories).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Dificuldade
-                <select
-                  disabled={uploading || busy}
-                  value={editor.difficulty}
-                  onChange={(e) => changeLevel(e.target.value as Difficulty)}
-                >
-                  {Object.entries(difficulties).map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="full-width">
-                Descrição para o responsável
-                <textarea
-                  required
-                  minLength={3}
-                  maxLength={240}
-                  value={editor.description}
-                  onChange={(e) =>
-                    setEditor({ ...editor, description: e.target.value })
-                  }
-                />
-              </label>
-              <label>
-                Cor do card
-                <select
-                  value={editor.color}
-                  onChange={(e) =>
-                    setEditor({ ...editor, color: e.target.value })
-                  }
-                >
-                  {[
-                    ["mint", "Verde"],
-                    ["peach", "Pêssego"],
-                    ["lavender", "Lilás"],
-                    ["sky", "Azul"],
-                    ["butter", "Amarelo"],
-                  ].map(([value, label]) => (
-                    <option key={value} value={value}>
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="checkbox editor-publish">
-                <input
-                  type="checkbox"
-                  checked={editor.published}
-                  onChange={(e) =>
-                    setEditor({ ...editor, published: e.target.checked })
-                  }
-                />
-                Publicar na biblioteca dos assinantes
-              </label>
-            </div>
-            <div className="notice">
-              <p>
-                {editor.kind === "figures"
-                  ? "Nível inicial: o app mostra a figura, fala a palavra, convida a criança a repetir e depois libera a seleção. A repetição é incentivada, não avaliada."
-                  : editor.kind === "association"
-                    ? "Escreva a pergunta falada, escolha uma pista visual e marque a resposta correta."
-                    : "Escreva a frase que será narrada e escolha as figuras da sequência. As palavras não aparecem para a criança."}
-              </p>
-            </div>
-            {editor.content.rounds.map((round, index) => (
-              <fieldset className="round-editor" key={index}>
-                <legend>Rodada {index + 1}</legend>
-                <div className="editor-grid">
-                  <label className="full-width">
-                    {editor.kind === "sentence"
-                      ? "Frase que será falada"
-                      : "Instrução falada"}
-                    <input
-                      required
-                      minLength={2}
-                      maxLength={240}
-                      value={
-                        editor.kind === "sentence" ? round.answer : round.prompt
-                      }
-                      onChange={(e) =>
-                        patchRound(
-                          index,
-                          editor.kind === "sentence"
-                            ? { answer: e.target.value }
-                            : { prompt: e.target.value },
-                        )
-                      }
-                    />
-                  </label>
-                  {editor.kind !== "figures" && (
-                    <label>
-                      Pista visual (desenhos/emoji)
-                      <input
-                        maxLength={60}
-                        value={round.scene || ""}
-                        onChange={(e) =>
-                          patchRound(index, { scene: e.target.value })
-                        }
-                      />
-                    </label>
-                  )}
-                  <label
-                    className={editor.kind === "figures" ? "full-width" : ""}
-                  >
-                    Orientação ao responsável
-                    <input
-                      maxLength={240}
-                      value={round.hint}
-                      onChange={(e) =>
-                        patchRound(index, { hint: e.target.value })
-                      }
-                    />
-                  </label>
-                </div>
-                <div className="choice-editors">
-                  {(editor.kind === "sentence"
-                    ? round.sequence!
-                    : round.choices
-                  ).map((choice, choiceIndex) => (
-                    <div className="choice-editor" key={choiceIndex}>
-                      <div className="choice-preview">
-                        {choice.image_url ? (
-                          <img src={choice.image_url} alt={choice.name} />
-                        ) : (
-                          <span>{choice.emoji}</span>
-                        )}
-                      </div>
-                      <label>
-                        Nome para o áudio
-                        <input
-                          required
-                          maxLength={60}
-                          value={choice.name}
-                          onChange={(e) =>
-                            updateChoice(index, choiceIndex, {
-                              name: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Desenho/emoji
-                        <input
-                          required
-                          maxLength={16}
-                          value={choice.emoji}
-                          onChange={(e) =>
-                            updateChoice(index, choiceIndex, {
-                              emoji: e.target.value,
-                            })
-                          }
-                        />
-                      </label>
-                      <label className="upload-label">
-                        Enviar ilustração
-                        <input
-                          type="file"
-                          accept="image/png,image/jpeg,image/webp"
-                          disabled={uploading}
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) void upload(file, index, choiceIndex);
-                            e.target.value = "";
-                          }}
-                        />
-                      </label>
-                      {choice.image_url && (
-                        <button
-                          type="button"
-                          className="back"
-                          onClick={() =>
-                            updateChoice(index, choiceIndex, { image_url: "" })
-                          }
-                        >
-                          Usar apenas o desenho/emoji
-                        </button>
-                      )}
-                      <AudioRecorder
-                        name={choice.name}
-                        value={choice.audio_url}
-                        disabled={busy || uploading}
-                        onBusy={setUploading}
-                        onChange={(url) =>
-                          updateChoice(index, choiceIndex, { audio_url: url })
-                        }
-                        upload={async (file) => {
-                          const form = new FormData();
-                          form.set("file", file);
-                          const data = await api("/api/admin/audio", {
-                            method: "POST",
-                            body: form,
-                          });
-                          return data.url;
-                        }}
-                      />
-                      {editor.kind !== "sentence" && (
-                        <label className="checkbox">
-                          <input
-                            type="radio"
-                            name={`correct-${index}`}
-                            checked={round.answer === choice.name}
-                            onChange={() =>
-                              patchRound(index, { answer: choice.name })
-                            }
-                          />
-                          Figura correta
-                        </label>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  className="back"
-                  disabled={
-                    uploading || busy || editor.content.rounds.length === 1
-                  }
-                  onClick={() =>
-                    setEditor({
-                      ...editor,
-                      content: {
-                        ...editor.content,
-                        rounds: editor.content.rounds.filter(
-                          (_, i) => i !== index,
-                        ),
-                      },
-                    })
-                  }
-                >
-                  Remover rodada
-                </button>
-              </fieldset>
-            ))}
-            <div className="admin-actions">
-              <button
-                type="button"
-                className="secondary"
-                disabled={
-                  uploading || busy || editor.content.rounds.length >= 12
-                }
-                onClick={() =>
-                  setEditor({
-                    ...editor,
-                    content: {
-                      ...editor.content,
-                      rounds: [
-                        ...editor.content.rounds,
-                        structuredClone(
-                          editor.content.rounds[
-                            editor.content.rounds.length - 1
-                          ],
-                        ),
-                      ],
-                    },
-                  })
-                }
-              >
-                + Adicionar rodada
-              </button>
-              <button type="button" className="secondary" onClick={showPreview}>
-                Ver prévia
-              </button>
-              <button className="primary" disabled={busy || uploading}>
-                {busy ? "Salvando…" : "Salvar atividade"}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <>
-            <div className="admin-toolbar">
-              <label className="search-box">
-                <span>⌕</span>
-                <input
-                  type="search"
-                  aria-label="Buscar atividade"
-                  placeholder="Buscar atividade…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-              <button
-                className="primary"
-                onClick={() => {
-                  setCreating(true);
-                  setEditor(blank());
-                  setMessage("");
-                }}
-              >
-                + Nova atividade
-              </button>
-              <button
-                className="secondary"
-                disabled={busy}
-                onClick={() => void seed()}
-              >
-                Importar atividades iniciais
-              </button>
-            </div>
-            <div className="admin-summary">
-              <span>{activities.length} atividades</span>
-              <span>
-                {activities.filter((a) => a.published).length} publicadas
-              </span>
-              <span>
-                {activities.filter((a) => !a.published).length} rascunhos
-              </span>
-            </div>
-            <div className="admin-activity-list">
-              {activities
-                .filter((a) =>
-                  `${a.title} ${categories[a.category]}`
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-                )
-                .map((a) => (
-                  <article key={a.id}>
-                    <span className="admin-card-icon">{a.emoji}</span>
-                    <div>
-                      <h2>{a.title}</h2>
-                      <p>
-                        {categories[a.category]} · {difficulties[a.difficulty]}{" "}
-                        · {a.content.rounds.length} rodadas
-                      </p>
-                      <small>
-                        {a.published
-                          ? "Publicada"
-                          : "Rascunho · não aparece para os assinantes"}
-                      </small>
-                    </div>
-                    <div className="admin-row-actions">
-                      <button
-                        className="secondary"
-                        disabled={busy}
-                        onClick={() => {
-                          setCreating(false);
-                          setEditor(structuredClone(a));
-                          setMessage("");
-                        }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-button"
-                        disabled={busy}
-                        onClick={() => void remove(a)}
-                      >
-                        Apagar
-                      </button>
-                    </div>
-                  </article>
-                ))}
-            </div>
-            {!activities.length && (
-              <div className="empty-state">
-                <h2>Sua biblioteca está pronta para começar.</h2>
-                <p>Importe as atividades iniciais ou crie seu primeiro card.</p>
+      )}
+      {data && (
+        <>
+          <nav
+            className="master-shortcuts"
+            aria-label="Atalhos do painel master"
+          >
+            <Link className="kids-card" href="/admin/conteudo">
+              <span aria-hidden="true">🖼️</span>
+              <div>
+                <h2>Gestão de conteúdo</h2>
+                <p>Criar e editar atividades, imagens e áudios.</p>
               </div>
-            )}
-          </>
-        )}
-        {preview && (
-          <div className="admin-preview">
-            <button className="secondary" onClick={() => setPreview(null)}>
-              Fechar prévia
+            </Link>
+            <Link className="kids-card" href="/atividades">
+              <span aria-hidden="true">🎮</span>
+              <div>
+                <h2>Área do usuário</h2>
+                <p>Explorar o aplicativo e conferir as atividades.</p>
+              </div>
+            </Link>
+            <Link className="kids-card" href="/conta?gerenciar=1">
+              <span aria-hidden="true">👤</span>
+              <div>
+                <h2>Minha conta</h2>
+                <p>Consultar e gerenciar seu acesso.</p>
+              </div>
+            </Link>
+            <Link className="kids-card" href="/dispositivos">
+              <span aria-hidden="true">📱</span>
+              <div>
+                <h2>Meus dispositivos</h2>
+                <p>Consultar aparelhos e liberar vagas.</p>
+              </div>
+            </Link>
+          </nav>
+          <div className="master-overview-heading">
+            <h2>Visão geral</h2>
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => void load()}
+            >
+              Atualizar dashboard
             </button>
-            <Activity
-              key={preview.id}
-              adventure={preview}
-              content={preview.content}
-              sound={true}
-              onExit={() => setPreview(null)}
-              onComplete={() => {
-                setPreview(null);
-                setMessage(
-                  "Prévia concluída. Salve a atividade para publicar as alterações.",
-                );
-              }}
-            />
           </div>
-        )}
-      </main>
-    </>
+          <div className="commercial-metrics">
+            {[
+              ["Cadastros", data.metrics.registered],
+              ["Já entraram na conta", data.metrics.loggedIn],
+              ["Compradores identificados", data.metrics.buyers],
+              ["Sem compra registrada", data.metrics.withoutPurchase],
+              ["Acessos válidos", data.metrics.active],
+              [
+                "Conversão de cadastros",
+                `${data.metrics.registered ? ((100 * data.metrics.buyers) / data.metrics.registered).toFixed(1) : "0"}%`,
+              ],
+              ["Recebido registrado (bruto)", money(data.metrics.grossCents)],
+              ["Reembolsos registrados", money(data.metrics.refundedCents)],
+              [
+                "Recebido menos reembolsos",
+                money(data.metrics.netBeforeFeesCents),
+              ],
+              [
+                "Receita recorrente mensal equivalente",
+                money(data.metrics.mrrCents),
+              ],
+              ...(data.metrics.yearlyPass > 0
+                ? [
+                    [
+                      "Passes antigos: equivalente mensal, sem recorrência",
+                      money(data.metrics.passMonthlyEquivalentCents),
+                    ],
+                  ]
+                : []),
+            ].map(([label, value]) => (
+              <article className="kids-card" key={label}>
+                <small>{label}</small>
+                <strong>{value}</strong>
+              </article>
+            ))}
+          </div>
+          <p>
+            {data.metrics.monthly} mensais · {data.metrics.annual} anuais
+            recorrentes
+            {data.metrics.yearlyPass > 0
+              ? ` · ${data.metrics.yearlyPass} passes antigos válidos`
+              : ""}
+            .
+          </p>
+          <p className="notice">
+            Recebimentos e reembolsos são registrados pelos webhooks após a
+            ativação desta versão. Pagamentos antigos precisam ter seus eventos
+            reenviados pelo Stripe para completar o histórico. Acesso e
+            assinaturas refletem o último evento recebido; o Stripe continua
+            sendo a referência financeira. Valores antes de taxas e impostos. A
+            conta master fica fora dos totais.
+          </p>
+          <form className="commercial-filters" onSubmit={submit}>
+            <label>
+              Buscar por nome ou e-mail
+              <input
+                value={search}
+                maxLength={100}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </label>
+            <label>
+              Situação
+              <select
+                aria-label="Situação"
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+              >
+                <option value="all">Todas as contas</option>
+                <option value="no_purchase">Sem compra registrada</option>
+                <option value="logged_no_purchase">
+                  Entraram e não compraram
+                </option>
+                <option value="active">Com acesso válido</option>
+                <option value="inactive">Sem acesso válido</option>
+              </select>
+            </label>
+            <button className="primary" disabled={busy}>
+              Consultar
+            </button>
+          </form>
+          <div className="customer-list">
+            {data.customers.map((c) => (
+              <article className="kids-card" key={c.id}>
+                <div>
+                  <h2>{c.guardian_name || c.email}</h2>
+                  <p>{c.email}</p>
+                  <span className="pill">
+                    {c.plan
+                      ? PLANS[c.plan].name
+                      : c.buyer
+                        ? "Compra anterior registrada"
+                        : "Sem compra registrada"}
+                  </span>
+                  <p>
+                    {c.active ? "Acesso válido" : "Sem acesso válido"}
+                    {c.cancel_at_period_end ? " · Renovação cancelada" : ""}
+                  </p>
+                </div>
+                <dl>
+                  <dt>Cadastro</dt>
+                  <dd>{date(c.created_at)}</dd>
+                  <dt>Último login</dt>
+                  <dd>{date(c.last_sign_in_at)}</dd>
+                  <dt>Última visita registrada</dt>
+                  <dd>{date(c.last_seen_at)}</dd>
+                  <dt>Logins acompanhados nesta versão</dt>
+                  <dd>{c.tracked_logins}</dd>
+                  <dt>Dispositivos</dt>
+                  <dd>{c.devices}/3</dd>
+                  <dt>Fim do período de acesso</dt>
+                  <dd>
+                    {date(
+                      c.pass_end ||
+                        (c.period_end
+                          ? new Date(c.period_end * 1000).toISOString()
+                          : null),
+                    )}
+                  </dd>
+                </dl>
+              </article>
+            ))}
+          </div>
+          {!data.customers.length && (
+            <p>Nenhuma conta encontrada com esses filtros.</p>
+          )}
+          <div className="commercial-pagination">
+            <button
+              className="secondary"
+              disabled={busy || page <= 1}
+              onClick={() => void load(page - 1)}
+            >
+              Anterior
+            </button>
+            <span>
+              Página {page} · {data.total} contas
+            </span>
+            <button
+              className="secondary"
+              disabled={busy || page * data.pageSize >= data.total}
+              onClick={() => void load(page + 1)}
+            >
+              Próxima
+            </button>
+          </div>
+          <small>
+            Atualizado em {date(data.generatedAt)}. E-mails não confirmados
+            também aparecem nos cadastros. “Sem compra registrada” não substitui
+            uma conferência de pagamentos históricos no Stripe.
+          </small>
+        </>
+      )}
+      {data && (
+        <section className="kids-card sales-estimator">
+          <h2>Simular novas vendas</h2>
+          <p>
+            Projeção de novas compras em um mês, separada do dinheiro já
+            recebido. Informe seus custos para estimar o saldo.
+          </p>
+          <div className="editor-grid">
+            {(
+              [
+                ["monthly", "Novas assinaturas mensais"],
+                ["annual", "Novas assinaturas anuais"],
+                ["fixed", "Custos fixos do mês (R$)"],
+                ["fees", "Taxas e impostos estimados (%)"],
+                ["perAccount", "Custo adicional por nova conta (R$)"],
+              ] as const
+            ).map(([key, label]) => (
+              <label key={key}>
+                {label}
+                <input
+                  type="number"
+                  min="0"
+                  max={key === "fees" ? 100 : 1000000}
+                  step={
+                    ["fixed", "fees", "perAccount"].includes(key) ? "0.01" : "1"
+                  }
+                  value={scenario[key]}
+                  onChange={(e) =>
+                    setScenario({ ...scenario, [key]: Number(e.target.value) })
+                  }
+                />
+              </label>
+            ))}
+          </div>
+          <dl>
+            <dt>Entrada bruta das novas vendas</dt>
+            <dd>{money(estimate.gross * 100)}</dd>
+            <dt>Recorrência mensal equivalente adicionada</dt>
+            <dd>{money(estimate.mrr * 100)}</dd>
+            <dt>Saldo estimado do mês</dt>
+            <dd>{money(estimate.estimatedBalance * 100)}</dd>
+          </dl>
+          <p>
+            O anual de R$ 450 entra de uma vez, mas equivale a R$ 37,50/mês de
+            receita recorrente. Esta simulação não prevê cancelamentos nem
+            substitui sua contabilidade. O saldo é de caixa do mês e não
+            desconta automaticamente os custos futuros de atender os acessos
+            anuais. Custos zerados não significam custos inexistentes.
+          </p>
+        </section>
+      )}
+    </main>
   );
 }

@@ -63,7 +63,7 @@ test("serviço indisponível não libera conteúdo ou edição por fallback", as
   await expect(
     page.getByRole("button", { name: "Começar Atividade" }),
   ).toHaveCount(0);
-  await page.goto("/admin");
+  await page.goto("/admin/conteudo");
   await expect(
     page.getByRole("heading", { name: "Acesso master necessário" }),
   ).toBeVisible();

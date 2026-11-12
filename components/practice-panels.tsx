@@ -476,7 +476,7 @@ export function ParentsPanel({
           Minha conta e assinatura
         </Link>
         {role === "master" && (
-          <Link className="kids-action purple-action" href="/admin">
+          <Link className="kids-action purple-action" href="/admin/conteudo">
             <ShieldCheck size={20} />
             Administrar conteúdo
           </Link>
@@ -579,7 +579,9 @@ export function SettingsPanel({
           className="kids-action outlined-action"
           onClick={async () => {
             const { browserAuth } = await import("../lib/supabase-browser");
-            const { error } = await browserAuth()!.auth.signOut();
+            const { error } = await browserAuth()!.auth.signOut({
+              scope: "local",
+            });
             if (!error) window.location.replace("/");
           }}
         >

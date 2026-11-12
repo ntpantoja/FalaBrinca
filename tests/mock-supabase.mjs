@@ -31,6 +31,8 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === "/health") return send(200, { ready: true });
   if (url.pathname === "/auth/v1/user") {
     const token = req.headers.authorization?.replace("Bearer ", "");
+    if (token === "temporary-fixture")
+      return send(503, { msg: "Temporary service failure" });
     if (token === "master-fixture") return send(200, user(master));
     if (token === "member-fixture") return send(200, user(member));
     return send(401, { msg: "Token de teste inválido" });

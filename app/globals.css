@@ -4847,3 +4847,13 @@ body {
 .commercial-page dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .commercial-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0; }
 @media(max-width:600px) { .customer-list article { grid-template-columns: 1fr; } .commercial-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .commercial-metrics strong { font-size: 23px; } }
+
+.master-shortcuts { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 16px; margin: 26px 0 32px; }
+.master-shortcuts > a { display: flex; align-items: center; gap: 16px; padding: 22px; text-decoration: none; color: #24394a; transition: border-color .2s, transform .2s; }
+.master-shortcuts > a:hover { border-color: #8050e3; transform: translateY(-2px); }
+.master-shortcuts > a:focus-visible { outline: 3px solid #8050e3; outline-offset: 3px; }
+.master-shortcuts > a > span { font-size: 32px; flex-shrink: 0; }
+.master-shortcuts h2 { margin: 0 0 6px; font-size: 18px; }
+.master-shortcuts p { margin: 0; font-size: 14px; }
+.master-overview-heading { display: flex; align-items: center; justify-content: space-between; gap: 15px; margin-bottom: 15px; }
+@media(max-width:600px) { .master-shortcuts { grid-template-columns: 1fr; } .master-overview-heading { align-items: flex-start; flex-direction: column; } }

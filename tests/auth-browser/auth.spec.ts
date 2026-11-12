@@ -439,7 +439,7 @@ test("painel master cria, edita e apaga card pela interface — banco simulado",
   await page.route("http://127.0.0.1:5400/auth/v1/user", (route) =>
     route.fulfill({ json: owner }),
   );
-  await page.goto("/admin");
+  await page.goto("/admin/conteudo");
   await page
     .getByRole("button", { name: "+ Nova atividade", exact: true })
     .click();
@@ -791,7 +791,7 @@ test("master grava áudio com MediaRecorder, confere prévia e salva na figura �
   await page.route("https://media.example.test/**", (route) =>
     route.fulfill({ status: 204 }),
   );
-  await page.goto("/admin");
+  await page.goto("/admin/conteudo");
   await page
     .getByRole("button", { name: "+ Nova atividade", exact: true })
     .click();
@@ -1047,7 +1047,7 @@ test("master consulta clientes sem compra e simula receitas sem inflar recorrên
   );
   await page.goto("/admin/clientes");
   await expect(
-    page.getByRole("heading", { name: "Clientes, acessos e vendas" }),
+    page.getByRole("heading", { name: "Painel master", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".customer-list")).toContainText(
     "member@example.test",
@@ -1074,4 +1074,172 @@ test("master consulta clientes sem compra e simula receitas sem inflar recorrên
     path: "/tmp/falabrinca-clientes-vendas.png",
     fullPage: true,
   });
+});
+
+async function masterBrowser(page: Page) {
+  const owner = {
+    ...user,
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    email: "master@example.test",
+  };
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    { ...session, access_token: "master-fixture", user: owner },
+  );
+  await page.route("http://127.0.0.1:5400/auth/v1/user", (route) =>
+    route.fulfill({ json: owner }),
+  );
+}
+for (const entry of ["/", "/conta?modo=login"])
+  test(`entrada master abre dashboard por ${entry} e atalhos levam às áreas corretas`, async ({
+    page,
+  }) => {
+    await masterBrowser(page);
+    await page.goto(entry);
+    await page.waitForURL("**/admin");
+    await expect(
+      page.getByRole("heading", { name: "Painel master", exact: true }),
+    ).toBeVisible();
+    const shortcuts = page.getByRole("navigation", {
+      name: "Atalhos do painel master",
+    });
+    await expect(shortcuts.getByRole("link")).toHaveCount(4);
+    await shortcuts.getByRole("link", { name: /Gestão de conteúdo/ }).click();
+    await page.waitForURL("**/admin/conteudo");
+    await expect(
+      page.getByRole("heading", { name: "Seu conteúdo, do seu jeito." }),
+    ).toBeVisible();
+    await page
+      .getByRole("link", { name: "Dashboard master", exact: true })
+      .click();
+    await page.waitForURL("**/admin");
+    await page
+      .getByRole("navigation", { name: "Atalhos do painel master" })
+      .getByRole("link", { name: /Área do usuário/ })
+      .click();
+    await page.waitForURL("**/atividades");
+    await expect(
+      page.getByRole("button", { name: "Começar Atividade", exact: true }),
+    ).toBeVisible();
+    await page.getByRole("link", { name: /Painel master · dashboard/ }).click();
+    await page.waitForURL("**/admin");
+  });
+test("master pode gerenciar a conta sem ser redirecionado em ciclo", async ({
+  page,
+}) => {
+  await masterBrowser(page);
+  await page.goto("/conta?gerenciar=1");
+  await expect(
+    page.getByRole("heading", { name: "Acesso master liberado" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/conta\?gerenciar=1$/);
+  await page.getByRole("link", { name: "Painel master", exact: true }).click();
+  await page.waitForURL("**/admin");
+});
+test("sessão renova após rejeição de token e abre atividades sem pedir outro login", async ({
+  page,
+}) => {
+  await paidApp(page);
+  const fresh = jwt; // Provider fixture returns a valid renewed session.
+  let refreshes = 0,
+    attempts = 0;
+  await page.route("http://127.0.0.1:5400/auth/v1/token**", async (route) => {
+    refreshes++;
+    await route.fulfill({ json: { ...session, access_token: fresh } });
+  });
+  await page.route("**/api/library", async (route) => {
+    attempts++;
+    if (attempts === 1)
+      return route.fulfill({ status: 401, json: { error: "Token expired" } });
+    await route.fulfill({ json: { activities: catalog, role: "subscriber" } });
+  });
+  await page.goto("/atividades");
+  await expect(
+    page.getByRole("button", { name: "Começar Atividade", exact: true }),
+  ).toBeVisible();
+  expect(attempts).toBe(2);
+  expect(refreshes).toBe(1);
+  expect(
+    await page.evaluate(() => !!localStorage.getItem("sb-127-auth-token")),
+  ).toBe(true);
+});
+test("falha temporária de validação retorna serviço indisponível e não sessão expirada", async ({
+  request,
+}) => {
+  const response = await request.get("/api/library", {
+    headers: { Authorization: "Bearer temporary-fixture" },
+  });
+  expect(response.status()).toBe(503);
+  expect((await response.json()).error).not.toContain("sessão expirou");
+});
+test("sair da conta invalida somente a sessão do aparelho atual", async ({
+  page,
+}) => {
+  await paidApp(page);
+  let scope = "";
+  await page.route("http://127.0.0.1:5400/auth/v1/logout**", async (route) => {
+    scope = new URL(route.request().url()).searchParams.get("scope") ?? "";
+    await route.fulfill({ json: {} });
+  });
+  await page.goto("/conta?gerenciar=1");
+  await page
+    .getByRole("button", { name: "Sair da conta", exact: true })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Você saiu da conta");
+  expect(scope).toBe("local");
+});
+
+test("retorno com token vencido renova a sessão persistida sem novo login", async ({
+  page,
+}) => {
+  await authMock(page);
+  let refreshed = 0;
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    { ...session, expires_at: Math.floor(Date.now() / 1000) - 60 },
+  );
+  await page.route("http://127.0.0.1:5400/auth/v1/token**", async (route) => {
+    refreshed++;
+    await route.fulfill({ json: session });
+  });
+  await page.route("**/api/library", (route) =>
+    route.fulfill({ json: { activities: catalog, role: "subscriber" } }),
+  );
+  await page.goto("/atividades");
+  await expect(
+    page.getByRole("button", { name: "Começar Atividade", exact: true }),
+  ).toBeVisible();
+  expect(refreshed).toBeGreaterThan(0);
+  await expect(page).toHaveURL(/\/atividades$/);
+});
+test("queda temporária mantém a sessão e permite tentar novamente sem entrar de novo", async ({
+  page,
+}) => {
+  await paidApp(page);
+  let calls = 0;
+  await page.route("**/api/library", async (route) => {
+    calls++;
+    if (calls === 1)
+      return route.fulfill({
+        status: 503,
+        json: {
+          error: "Serviço temporariamente indisponível. Tente novamente.",
+        },
+      });
+    await route.fulfill({ json: { activities: catalog, role: "subscriber" } });
+  });
+  await page.goto("/atividades");
+  await expect(page.getByRole("status")).toContainText(
+    "temporariamente indisponível",
+  );
+  await expect(page).toHaveURL(/\/atividades$/);
+  expect(
+    await page.evaluate(() => !!localStorage.getItem("sb-127-auth-token")),
+  ).toBe(true);
+  await page
+    .getByRole("button", { name: "Tentar novamente", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Começar Atividade", exact: true }),
+  ).toBeVisible();
 });

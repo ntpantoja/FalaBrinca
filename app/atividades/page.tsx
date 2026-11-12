@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { browserAuth } from "../../lib/supabase-browser";
 import type { Adventure } from "../../lib/catalog";
+import { authenticatedFetch, SessionExpiredError } from "../../lib/session";
 import Library from "./library";
 export default function ActivitiesPage() {
   const [data, setData] = useState<{
@@ -17,17 +18,9 @@ export default function ActivitiesPage() {
       setError("O acesso às contas ainda está sendo configurado.");
       return;
     }
-    const {
-      data: { session },
-    } = await auth.auth.getSession();
-    if (!session) {
-      window.location.replace("/conta?modo=login");
-      return;
-    }
     try {
-      const device = await fetch("/api/devices", {
+      const device = await authenticatedFetch("/api/devices", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
       });
       if (device.status === 409) {
         window.location.replace("/dispositivos");
@@ -37,10 +30,7 @@ export default function ActivitiesPage() {
         const result = await device.json();
         throw new Error(result.error);
       }
-      const response = await fetch("/api/library", {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        cache: "no-store",
-      });
+      const response = await authenticatedFetch("/api/library");
       const result = await response.json();
       if (response.status === 401) {
         window.location.replace("/conta?modo=login");
@@ -57,6 +47,10 @@ export default function ActivitiesPage() {
       if (!response.ok) throw new Error(result.error);
       setData(result);
     } catch (e) {
+      if (e instanceof SessionExpiredError) {
+        window.location.replace("/conta?modo=login");
+        return;
+      }
       setError(
         e instanceof Error
           ? e.message

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { authenticatedFetch, sessionForRequest } from "../../lib/session";
 import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import { browserAuth } from "../../lib/supabase-browser";
@@ -34,6 +35,7 @@ const statuses: Record<string, string> = {
 };
 export default function AccountPage() {
   const [selectedPlan, setSelectedPlan] = useState<AvailablePlanId>("monthly");
+  const [connectionError, setConnectionError] = useState("");
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState(false);
@@ -55,19 +57,10 @@ export default function AccountPage() {
   const [guardian, setGuardian] = useState("");
   const [child, setChild] = useState("");
   const [consent, setConsent] = useState(false);
-  async function token() {
-    const auth = browserAuth();
-    return auth
-      ? (await auth.auth.getSession()).data.session?.access_token
-      : null;
-  }
   async function refresh() {
-    const access = await token();
-    if (!access) return;
     setLoadingAccount(true);
     try {
-      const response = await fetch("/api/account", {
-        headers: { Authorization: `Bearer ${access}` },
+      const response = await authenticatedFetch("/api/account", {
         cache: "no-store",
       });
       const data = await response.json();
@@ -85,12 +78,9 @@ export default function AccountPage() {
     }
   }
   async function loadProfile() {
-    const access = await token();
-    if (!access) return;
     setProfileState("loading");
     try {
-      const response = await fetch("/api/profile", {
-        headers: { Authorization: `Bearer ${access}` },
+      const response = await authenticatedFetch("/api/profile", {
         cache: "no-store",
       });
       const data = await response.json();
@@ -132,16 +122,22 @@ export default function AccountPage() {
         }
       }
     });
-    void auth.auth
-      .getUser()
-      .then(({ data }) => {
+    void sessionForRequest()
+      .then((session) => {
         if (alive && !changed) {
-          setUser(data.user);
+          setUser(session?.user ?? null);
           setReady(true);
         }
       })
-      .catch(() => {
-        if (alive) setReady(true);
+      .catch((error) => {
+        if (alive) {
+          setConnectionError(
+            error instanceof Error
+              ? error.message
+              : "Não foi possível reconectar.",
+          );
+          setReady(true);
+        }
       });
     try {
       const stored = sessionStorage.getItem("falabrinca-pending-email");
@@ -306,12 +302,9 @@ export default function AccountPage() {
     setBusy(true);
     setMessage("");
     try {
-      const access = await token();
-      if (!access) throw new Error("Seu acesso expirou. Entre novamente.");
-      const response = await fetch("/api/profile", {
+      const response = await authenticatedFetch("/api/profile", {
         method: "PUT",
         headers: {
-          Authorization: `Bearer ${access}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -341,12 +334,9 @@ export default function AccountPage() {
     setBusy(true);
     setMessage("");
     try {
-      const access = await token();
-      if (!access) throw new Error("Entre na conta para continuar.");
-      const response = await fetch(`/api/${path}`, {
+      const response = await authenticatedFetch(`/api/${path}`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${access}`,
           "Content-Type": "application/json",
         },
         body:
@@ -368,7 +358,7 @@ export default function AccountPage() {
   }
   async function logout() {
     setBusy(true);
-    const { error } = await browserAuth()!.auth.signOut();
+    const { error } = await browserAuth()!.auth.signOut({ scope: "local" });
     if (error) setMessage("Não foi possível sair. Tente novamente.");
     else {
       setUser(null);
@@ -388,10 +378,8 @@ export default function AccountPage() {
       return;
     setBusy(true);
     try {
-      const access = await token();
-      const response = await fetch("/api/profile", {
+      const response = await authenticatedFetch("/api/profile", {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${access}` },
       });
       if (!response.ok) throw new Error();
       setProfile(null);
@@ -413,7 +401,7 @@ export default function AccountPage() {
       account?.active &&
       (account.isMaster || profileState === "ready")
     )
-      window.location.replace("/atividades");
+      window.location.replace(account.isMaster ? "/admin" : "/atividades");
   }, [managing, user?.id, account?.active, account?.isMaster, profileState]);
   useEffect(() => {
     if (
@@ -430,6 +418,18 @@ export default function AccountPage() {
     }, 2000);
     return () => clearInterval(timer);
   }, [user?.id, account?.active]);
+  if (connectionError)
+    return (
+      <main className="auth-bridge">
+        <section className="account-card">
+          <h1>Vamos reconectar?</h1>
+          <p role="status">{connectionError}</p>
+          <button className="primary" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </button>
+        </section>
+      </main>
+    );
   return (
     <main className="auth-entry">
       <header className="auth-entry-brand">

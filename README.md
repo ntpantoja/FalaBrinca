@@ -4,11 +4,12 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 
 ## Fluxo atual
 
-- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 50/mês**, **R$ 450/ano com renovação automática**, cobrado de uma vez e sem parcelamento na mesma área. Após confirmação do acesso, abre o painel de prática.
+- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 50/mês**, **R$ 450/ano com renovação automática**, cobrado de uma vez e sem parcelamento na mesma área. Após confirmação do acesso, assinantes abrem o painel de prática e a conta master abre o dashboard administrativo.
 - `/conta`: cadastro, Google, confirmação por e-mail, perfil familiar e assinatura.
 - `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa ou passe válido e dispositivo cadastrado.
-- `/admin`: painel exclusivo da conta master, com gestão de conteúdo, ilustrações e gravação de áudio por figura.
-- `/admin/clientes`: cadastros, acessos, clientes sem compra, indicadores financeiros e simulação de vendas, exclusivos do master.
+- `/admin`: dashboard exclusivo do master, com indicadores e atalhos para conteúdo, área do usuário, conta e dispositivos.
+- `/admin/conteudo`: gestão de atividades, ilustrações e gravação de áudio por figura.
+- `/admin/clientes`: endereço antigo mantido como alias do dashboard.
 - `/dispositivos`: lista e desconexão dos até três dispositivos por conta.
 
 As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. O material de importação inclui 27 atividades e 81 rodadas. Dificuldades:
@@ -90,3 +91,5 @@ Antes de vender, mantenha identificação comercial e atendimento publicados, te
 Para gravar a pronúncia de cada figura no painel master, siga [Gravar áudio das figuras](GRAVAR-AUDIO-DAS-FIGURAS.md). Em instalações existentes, execute `supabase/recorded-audio-migration.sql` uma vez no Supabase.
 
 A versão comercial possui duas modalidades, até três dispositivos por conta e painel master de clientes/vendas. Para ativar em projeto existente ou novo, siga [Planos, dispositivos e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md), incluindo a migração SQL e os novos preços/eventos no Stripe.
+
+Veja [Sessões e painel master](SESSOES-E-PAINEL-MASTER.md) para os ajustes de permanência do login e [Custos de operação](CUSTOS-DE-OPERACAO.md) para o orçamento de referência.

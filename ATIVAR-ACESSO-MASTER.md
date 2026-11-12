@@ -33,7 +33,7 @@ Não use prefixo `NEXT_PUBLIC_`. A permissão é conferida no servidor, nunca em
 
 1. Acesse `https://falabrinca-43kf.vercel.app/conta?modo=login`.
 2. Entre com sua conta de sempre (e-mail/senha ou Google já configurado).
-3. Sua conta mostrará **Acesso master** e um botão para abrir o painel. Você também pode abrir `https://falabrinca-43kf.vercel.app/admin`.
+3. Sua conta abre automaticamente o dashboard master após entrar. Abra **Gestão de conteúdo** para editar a biblioteca. Você também pode abrir `https://falabrinca-43kf.vercel.app/admin`.
 4. Clique em **Importar atividades iniciais** e confirme.
 
 A importação cria 27 atividades com 81 rodadas. Não sobrescreve atividades que já existem com o mesmo identificador. Se você apagar uma atividade inicial e clicar em importar novamente, ela será recriada; a confirmação informa isso. Nada é reimportado automaticamente ao iniciar o aplicativo.
@@ -80,7 +80,7 @@ O app **não grava voz, não confirma se houve repetição e não avalia pronún
 
 ## Testar antes de divulgar
 
-- Com sua conta: abrir `/admin`, importar, criar um rascunho, publicar, editar e apagar um card de teste.
+- Com sua conta: abrir `/admin` → **Gestão de conteúdo**, importar, criar um rascunho, publicar, editar e apagar um card de teste.
 - Com outra conta: confirmar que não abre o painel master.
 - Com conta sem assinatura: confirmar que não recebe conteúdo nem acessando diretamente as URLs das antigas atividades gratuitas.
 - Com assinante: abrir `/atividades`, escolher categoria e dificuldade, concluir a etapa de ouvir/repetir e depois selecionar.

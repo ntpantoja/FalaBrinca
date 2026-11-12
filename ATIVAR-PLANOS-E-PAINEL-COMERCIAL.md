@@ -67,7 +67,7 @@ Sair da conta não libera automaticamente a vaga. Desconectar bloqueia as próxi
 
 ## 6. Painel master
 
-Abra **Painel master → Clientes e vendas** (`/admin/clientes`). Mostra cadastros, e-mail, nome do responsável quando informado, último login, última visita acompanhada, dispositivos, modalidade e validade. O relatório não inclui nomes das crianças.
+A conta master abre automaticamente o dashboard em `/admin`. O endereço anterior `/admin/clientes` continua funcionando. Mostra cadastros, e-mail, nome do responsável quando informado, último login, última visita acompanhada, dispositivos, modalidade e validade. O relatório não inclui nomes das crianças.
 
 Use o filtro **Entraram e não compraram** para acompanhar as contas sem compra registrada. Há busca por nome/e-mail, filtros de acesso e paginação de 50 contas. A conta master fica fora dos totais. O último login vem do Supabase; as contagens de logins e visitas detalhadas começam nesta versão. Recarregar com a mesma sessão não conta como novo login.
 

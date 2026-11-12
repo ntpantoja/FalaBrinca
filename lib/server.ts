@@ -1,4 +1,5 @@
 import "server-only";
+import { temporaryAuthFailure } from "./auth-errors";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 import { NextResponse } from "next/server";
@@ -43,6 +44,11 @@ export async function requireUser(request: Request) {
   if (!token) throw new HttpError(401, "Entre na sua conta para continuar.");
   const db = adminDb();
   const { data, error } = await db.auth.getUser(token);
+  if (error && temporaryAuthFailure(error))
+    throw new HttpError(
+      503,
+      "Não foi possível validar seu acesso agora. Tente novamente em instantes.",
+    );
   if (error || !data.user)
     throw new HttpError(401, "Sua sessão expirou. Entre novamente.");
   if (!data.user.email_confirmed_at)
