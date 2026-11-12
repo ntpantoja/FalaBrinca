@@ -957,12 +957,12 @@ test("atividade inicia gravação automaticamente e narra a próxima figura sem 
   ).toContain(withAudio.rounds[1].answer);
 });
 
-test("cadastro oferece três modalidades com preços e renovação explícitos", async ({
+test("cadastro oferece somente mensal e anual com renovação explícita", async ({
   page,
 }) => {
   await authMock(page);
   await page.goto("/");
-  await expect(page.getByRole("radio")).toHaveCount(3);
+  await expect(page.getByRole("radio")).toHaveCount(2);
   await page.getByRole("radio", { name: /Anual com renovação/ }).check();
   await expect(page.locator(".plan-option.selected")).toContainText(
     "R$ 450,00",
@@ -970,13 +970,7 @@ test("cadastro oferece três modalidades com preços e renovação explícitos",
   await expect(page.locator(".plan-option.selected")).toContainText(
     "Renovação anual automática",
   );
-  await page.getByRole("radio", { name: /12 meses sem renovação/ }).check();
-  await expect(page.locator(".plan-option.selected")).toContainText(
-    "R$ 500,00",
-  );
-  await expect(page.locator(".plan-option.selected")).toContainText(
-    "Sem renovação automática",
-  );
+  await expect(page.locator(".plan-options")).not.toContainText("R$ 500,00");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -1069,8 +1063,7 @@ test("master consulta clientes sem compra e simula receitas sem inflar recorrên
     .getByLabel("Novas assinaturas mensais", { exact: true })
     .fill("10");
   await page.getByLabel("Novas assinaturas anuais", { exact: true }).fill("2");
-  await page.getByLabel("Novos pagamentos únicos", { exact: true }).fill("3");
-  await expect(page.locator(".sales-estimator")).toContainText("2.900,00");
+  await expect(page.locator(".sales-estimator")).toContainText("1.400,00");
   await expect(page.locator(".sales-estimator")).toContainText("575,00");
   expect(
     await page.evaluate(

@@ -4,7 +4,7 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 
 ## Fluxo atual
 
-- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 50/mês**, **R$ 450/ano com renovação automática** ou **R$ 500 por 12 meses sem renovação** na mesma área. Após confirmação do acesso, abre o painel de prática.
+- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 50/mês**, **R$ 450/ano com renovação automática**, cobrado de uma vez e sem parcelamento na mesma área. Após confirmação do acesso, abre o painel de prática.
 - `/conta`: cadastro, Google, confirmação por e-mail, perfil familiar e assinatura.
 - `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa ou passe válido e dispositivo cadastrado.
 - `/admin`: painel exclusivo da conta master, com gestão de conteúdo, ilustrações e gravação de áudio por figura.
@@ -89,4 +89,4 @@ Antes de vender, mantenha identificação comercial e atendimento publicados, te
 
 Para gravar a pronúncia de cada figura no painel master, siga [Gravar áudio das figuras](GRAVAR-AUDIO-DAS-FIGURAS.md). Em instalações existentes, execute `supabase/recorded-audio-migration.sql` uma vez no Supabase.
 
-A versão comercial possui três modalidades, até três dispositivos por conta e painel master de clientes/vendas. Para ativar em projeto existente ou novo, siga [Planos, dispositivos e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md), incluindo a migração SQL e os novos preços/eventos no Stripe.
+A versão comercial possui duas modalidades, até três dispositivos por conta e painel master de clientes/vendas. Para ativar em projeto existente ou novo, siga [Planos, dispositivos e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md), incluindo a migração SQL e os novos preços/eventos no Stripe.

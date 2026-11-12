@@ -52,7 +52,7 @@ test("acesso exige assinatura ativa ou teste e o preço correto", () => {
 
 import { PLANS, isPlanId, passEnd } from "../lib/plan.ts";
 import { estimateSales } from "../lib/commercial.ts";
-test("três preços distintos exigem intervalo correto e pagamento único não pode ser recorrente", () => {
+test("preços mensal/anual e passe legado exigem tipo e intervalo corretos", () => {
   assert.equal(PLANS.annual.amount, 45000);
   assert.equal(PLANS.yearly_pass.amount, 50000);
   const yearly = {

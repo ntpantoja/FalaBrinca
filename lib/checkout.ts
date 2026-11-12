@@ -4,13 +4,18 @@ import type Stripe from "stripe";
 import type { User } from "@supabase/supabase-js";
 import { appUrl, customerId, HttpError, type adminDb } from "./server";
 import { activePass, planPrice, subscriptionFor } from "./billing";
-import { PLANS, passEnd, type PlanId } from "./plan";
+import { PLANS, passEnd, isAvailablePlanId, type PlanId } from "./plan";
 export async function prepareCheckout(
   selected: PlanId,
   user: User,
   db: ReturnType<typeof adminDb>,
   stripe: Stripe,
 ) {
+  if (!isAvailablePlanId(selected))
+    throw new HttpError(
+      400,
+      "Escolha o plano mensal ou anual. O pagamento único não está mais à venda.",
+    );
   let release: (() => Promise<void>) | undefined;
   try {
     const price = await planPrice(stripe, selected);

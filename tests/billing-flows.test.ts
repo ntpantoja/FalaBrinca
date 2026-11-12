@@ -5,7 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { prepareCheckout } from "../lib/checkout";
 import { processStripeEvent } from "../lib/stripe-events";
 import type { adminDb } from "../lib/server";
-import { PLANS, type PlanId } from "../lib/plan";
+import { PLANS, AVAILABLE_PLAN_IDS } from "../lib/plan";
 process.env.APP_URL = "http://localhost:3000";
 process.env.STRIPE_PRICE_ID = "price_monthly";
 process.env.STRIPE_ANNUAL_PRICE_ID = "price_annual";
@@ -213,8 +213,8 @@ function canonical() {
     },
   };
 }
-test("checkout envia o preço e o modo correto nas três modalidades", async () => {
-  for (const plan of Object.keys(PLANS) as PlanId[]) {
+test("checkout oferece somente as assinaturas mensal e anual", async () => {
+  for (const plan of AVAILABLE_PLAN_IDS) {
     const { state, db, stripe } = fixture();
     const response = await prepareCheckout(plan, user, db, stripe);
     assert.equal(response.status, 200);
@@ -224,14 +224,8 @@ test("checkout envia o preço e o modo correto nas três modalidades", async () 
     assert.deepEqual(payload.line_items, [
       { price: process.env[PLANS[plan].env], quantity: 1 },
     ]);
-    assert.equal(
-      Object.hasOwn(payload, "subscription_data"),
-      plan !== "yearly_pass",
-    );
-    assert.equal(
-      Object.hasOwn(payload, "payment_intent_data"),
-      plan === "yearly_pass",
-    );
+    assert.equal(Object.hasOwn(payload, "subscription_data"), true);
+    assert.equal(Object.hasOwn(payload, "payment_intent_data"), false);
   }
 });
 test("checkout bloqueia compra duplicada, pagamento concorrente e assinatura pendente", async () => {
@@ -269,14 +263,14 @@ test("trocar modalidade expira checkout antigo e sessão existente do mesmo pre�
     {
       id: "cs_existing",
       url: "https://stripe.test/existing",
-      mode: "payment",
-      metadata: { app: "falabrinca", price_id: "price_pass" },
+      mode: "subscription",
+      metadata: { app: "falabrinca", price_id: "price_annual" },
     },
   ];
   assert.equal(
     (
       await (
-        await prepareCheckout("yearly_pass", user, other.db, other.stripe)
+        await prepareCheckout("annual", user, other.db, other.stripe)
       ).json()
     ).url,
     "https://stripe.test/existing",
@@ -393,7 +387,7 @@ test("fatura anual registra recebimento real sem confundir com cobrança mensal"
   assert.equal(receipt.data.payment_intent_id, "pi_invoice");
 });
 
-test("pagamento único assíncrono que falhou pode ser tentado novamente", async () => {
+test("passe antigo com pagamento assíncrono falho não impede nova assinatura", async () => {
   const { state, db, stripe } = fixture();
   state.completed = [
     {
@@ -404,6 +398,15 @@ test("pagamento único assíncrono que falhou pode ser tentado novamente", async
       created: Math.floor(Date.now() / 1000),
     },
   ];
-  await prepareCheckout("yearly_pass", user, db, stripe);
+  await prepareCheckout("monthly", user, db, stripe);
   assert.equal(state.created.length, 1);
+});
+
+test("pagamento único retirado é rejeitado no servidor antes de criar checkout", async () => {
+  const { state, db, stripe } = fixture();
+  await assert.rejects(() => prepareCheckout("yearly_pass", user, db, stripe), {
+    status: 400,
+  });
+  assert.equal(state.created.length, 0);
+  assert.equal(state.writes.length, 0);
 });

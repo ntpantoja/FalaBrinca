@@ -16,7 +16,7 @@ export const PLANS = {
     label: "R$ 450,00",
     name: "Anual com renovação",
     description:
-      "R$ 450 por ano, cobrados de uma vez. Renovação anual automática até cancelar. Equivale a R$ 37,50/mês.",
+      "R$ 450 por ano, cobrados de uma vez, sem parcelamento. Renovação anual automática até cancelar. Equivale a R$ 37,50/mês.",
     env: "STRIPE_ANNUAL_PRICE_ID",
     mode: "subscription",
   },
@@ -33,6 +33,12 @@ export const PLANS = {
   },
 } as const;
 export type PlanId = keyof typeof PLANS;
+// Keep the retired pass for existing entitlements, refunds and historical reports.
+export const AVAILABLE_PLAN_IDS = ["monthly", "annual"] as const;
+export type AvailablePlanId = (typeof AVAILABLE_PLAN_IDS)[number];
+export function isAvailablePlanId(value: unknown): value is AvailablePlanId {
+  return value === "monthly" || value === "annual";
+}
 export const PLAN = PLANS.monthly;
 export function isPlanId(value: unknown): value is PlanId {
   return typeof value === "string" && Object.hasOwn(PLANS, value);

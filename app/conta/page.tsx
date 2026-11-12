@@ -3,7 +3,12 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import { browserAuth } from "../../lib/supabase-browser";
-import { PLANS, type PlanId } from "../../lib/plan";
+import {
+  PLANS,
+  AVAILABLE_PLAN_IDS,
+  type AvailablePlanId,
+  type PlanId,
+} from "../../lib/plan";
 import { type FamilyProfile } from "../../lib/profile";
 
 type Account = {
@@ -28,7 +33,7 @@ const statuses: Record<string, string> = {
   none: "Sem assinatura",
 };
 export default function AccountPage() {
-  const [selectedPlan, setSelectedPlan] = useState<PlanId>("monthly");
+  const [selectedPlan, setSelectedPlan] = useState<AvailablePlanId>("monthly");
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState(false);
@@ -852,8 +857,9 @@ export default function AccountPage() {
           <h2>Um mundo para descobrir 🌈</h2>
           <fieldset className="plan-options">
             <legend>Modalidade de pagamento</legend>
-            {(Object.entries(PLANS) as [PlanId, (typeof PLANS)[PlanId]][]).map(
-              ([id, plan]) => (
+            {AVAILABLE_PLAN_IDS.map((id) => {
+              const plan = PLANS[id];
+              return (
                 <label
                   key={id}
                   className={
@@ -870,17 +876,13 @@ export default function AccountPage() {
                   <span>
                     <strong>
                       {plan.name} · {plan.label}
-                      {id === "monthly"
-                        ? "/mês"
-                        : id === "annual"
-                          ? "/ano"
-                          : " uma vez"}
+                      {id === "monthly" ? "/mês" : "/ano"}
                     </strong>
                     <small>{plan.description}</small>
                   </span>
                 </label>
-              ),
-            )}
+              );
+            })}
           </fieldset>
           <ul>
             <li>Atividades visuais com áudio e repetição.</li>
@@ -890,8 +892,8 @@ export default function AccountPage() {
           </ul>
           <p>
             Até três dispositivos cadastrados por conta. Nos planos recorrentes,
-            cancelar a renovação mantém o acesso pelo período pago. O pagamento
-            único termina após 12 meses.
+            cancelar a renovação mantém o acesso pelo período pago. O anual é
+            cobrado de uma vez, sem parcelamento.
           </p>
           <button
             className="kids-action purple-action"
@@ -916,7 +918,7 @@ export default function AccountPage() {
                 ? "Seu acesso está ativo"
                 : !user
                   ? "Crie sua conta ou entre para assinar"
-                  : `${selectedPlan === "yearly_pass" ? "Comprar 12 meses por" : "Assinar por"} ${PLANS[selectedPlan].label}${selectedPlan === "monthly" ? "/mês" : selectedPlan === "annual" ? "/ano" : " uma vez"}`}
+                  : `Assinar por ${PLANS[selectedPlan].label}${selectedPlan === "monthly" ? "/mês" : "/ano"}`}
           </button>
           <small>
             Você confirma o pagamento no checkout seguro do Stripe. Criar uma

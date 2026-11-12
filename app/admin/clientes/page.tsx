@@ -60,7 +60,6 @@ export default function CustomersPage() {
   const [scenario, setScenario] = useState({
     monthly: 10,
     annual: 5,
-    passes: 5,
     fixed: 0,
     fees: 0,
     perAccount: 0,
@@ -100,7 +99,7 @@ export default function CustomersPage() {
   const estimate = estimateSales(
     scenario.monthly,
     scenario.annual,
-    scenario.passes,
+    0,
     scenario.fixed,
     scenario.fees,
     scenario.perAccount,
@@ -151,10 +150,14 @@ export default function CustomersPage() {
                 "Receita recorrente mensal equivalente",
                 money(data.metrics.mrrCents),
               ],
-              [
-                "Passes: equivalente mensal, sem recorrência",
-                money(data.metrics.passMonthlyEquivalentCents),
-              ],
+              ...(data.metrics.yearlyPass > 0
+                ? [
+                    [
+                      "Passes antigos: equivalente mensal, sem recorrência",
+                      money(data.metrics.passMonthlyEquivalentCents),
+                    ],
+                  ]
+                : []),
             ].map(([label, value]) => (
               <article className="kids-card" key={label}>
                 <small>{label}</small>
@@ -164,7 +167,11 @@ export default function CustomersPage() {
           </div>
           <p>
             {data.metrics.monthly} mensais · {data.metrics.annual} anuais
-            recorrentes · {data.metrics.yearlyPass} passes de 12 meses válidos.
+            recorrentes
+            {data.metrics.yearlyPass > 0
+              ? ` · ${data.metrics.yearlyPass} passes antigos válidos`
+              : ""}
+            .
           </p>
           <p className="notice">
             Recebimentos e reembolsos são registrados pelos webhooks após a
@@ -286,7 +293,6 @@ export default function CustomersPage() {
               [
                 ["monthly", "Novas assinaturas mensais"],
                 ["annual", "Novas assinaturas anuais"],
-                ["passes", "Novos pagamentos únicos"],
                 ["fixed", "Custos fixos do mês (R$)"],
                 ["fees", "Taxas e impostos estimados (%)"],
                 ["perAccount", "Custo adicional por nova conta (R$)"],
@@ -314,18 +320,15 @@ export default function CustomersPage() {
             <dd>{money(estimate.gross * 100)}</dd>
             <dt>Recorrência mensal equivalente adicionada</dt>
             <dd>{money(estimate.mrr * 100)}</dd>
-            <dt>Passes: equivalente mensal, sem recorrência</dt>
-            <dd>{money(estimate.passEquivalent * 100)}</dd>
             <dt>Saldo estimado do mês</dt>
             <dd>{money(estimate.estimatedBalance * 100)}</dd>
           </dl>
           <p>
             O anual de R$ 450 entra de uma vez, mas equivale a R$ 37,50/mês de
-            receita recorrente. O passe de R$ 500 não gera renovação. Esta
-            simulação não prevê cancelamentos nem substitui sua contabilidade. O
-            saldo é de caixa do mês e não desconta automaticamente os custos
-            futuros de atender os acessos anuais. Custos zerados não significam
-            custos inexistentes.
+            receita recorrente. Esta simulação não prevê cancelamentos nem
+            substitui sua contabilidade. O saldo é de caixa do mês e não
+            desconta automaticamente os custos futuros de atender os acessos
+            anuais. Custos zerados não significam custos inexistentes.
           </p>
         </section>
       )}

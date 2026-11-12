@@ -7,7 +7,7 @@ import {
   stripeClient,
 } from "../../../lib/server";
 import { prepareCheckout } from "../../../lib/checkout";
-import { isPlanId } from "../../../lib/plan";
+import { isAvailablePlanId } from "../../../lib/plan";
 export async function POST(request: Request) {
   try {
     requireOrigin(request);
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       throw new HttpError(400, "Escolha uma modalidade de pagamento.");
     }
     const selected = (input as { plan?: unknown })?.plan;
-    if (!isPlanId(selected))
+    if (!isAvailablePlanId(selected))
       throw new HttpError(400, "Escolha uma modalidade válida.");
     const { user, db } = await requireUser(request);
     if (isMasterUser(user.id))

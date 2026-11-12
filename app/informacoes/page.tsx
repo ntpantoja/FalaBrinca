@@ -35,15 +35,15 @@ export default function Information() {
       </p>
       <h2>Planos e cancelamento</h2>
       <p>
-        Há três opções: R$ 50,00 por mês com renovação automática; R$ 450,00 por
-        ano, cobrados de uma vez, com renovação anual automática; ou pagamento
-        único de R$ 500,00 por 12 meses, sem renovação automática. Criar conta
-        não gera cobrança. A compra só é realizada ao confirmar no checkout
-        seguro do Stripe. Os métodos disponíveis aparecem nessa etapa.
+        Há duas opções: R$ 50,00 por mês com renovação automática ou R$ 450,00
+        por ano, cobrados de uma vez, com renovação anual automática. O anual
+        não é parcelado. Criar conta não gera cobrança. A compra só é realizada
+        ao confirmar no checkout seguro do Stripe. Os métodos disponíveis
+        aparecem nessa etapa.
       </p>
       <p>
         O acesso às atividades exige cadastro/login e assinatura ativa ou passe
-        de 12 meses válido. Cada conta pode cadastrar até três dispositivos;
+        antigo de 12 meses válido. Cada conta pode cadastrar até três dispositivos;
         cada navegador ou perfil conta como um dispositivo. É possível
         desconectar aparelhos pela tela Dispositivos. As verificações no
         servidor bloqueiam novas consultas de atividades em aparelhos

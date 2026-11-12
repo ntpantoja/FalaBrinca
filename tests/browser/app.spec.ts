@@ -7,7 +7,7 @@ test("o link abre direto o cadastro e a assinatura, sem apresentação ou acesso
   await expect(page.locator(".auth-entry")).toBeVisible();
   await expect(page.locator(".plan-options")).toContainText("R$ 50,00");
   await expect(page.locator(".plan-options")).toContainText("R$ 450,00");
-  await expect(page.locator(".plan-options")).toContainText("R$ 500,00");
+  await expect(page.locator(".plan-options")).not.toContainText("R$ 500,00");
   await expect(page.locator(".marketing-main")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Começar Atividade" }),
