@@ -266,6 +266,9 @@ export default function Admin() {
         </Link>
         <div className="admin-header-links">
           <span className="pill">MASTER</span>
+          <Link className="adult-link" href="/admin/clientes">
+            Clientes e vendas
+          </Link>
           <Link className="adult-link" href="/atividades">
             Ver biblioteca
           </Link>

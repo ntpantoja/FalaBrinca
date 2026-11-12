@@ -4,10 +4,12 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 
 ## Fluxo atual
 
-- `/`: cadastro/login direto com Google ou e-mail, perfil e assinatura de **R$ 50,00/mês** na mesma área. Após confirmação do acesso, abre o painel de prática.
+- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 50/mês**, **R$ 450/ano com renovação automática** ou **R$ 500 por 12 meses sem renovação** na mesma área. Após confirmação do acesso, abre o painel de prática.
 - `/conta`: cadastro, Google, confirmação por e-mail, perfil familiar e assinatura.
-- `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa.
-- `/admin`: painel exclusivo da conta master, com criação, edição, prévia, publicação, ocultação, exclusão e upload de ilustrações.
+- `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa ou passe válido e dispositivo cadastrado.
+- `/admin`: painel exclusivo da conta master, com gestão de conteúdo, ilustrações e gravação de áudio por figura.
+- `/admin/clientes`: cadastros, acessos, clientes sem compra, indicadores financeiros e simulação de vendas, exclusivos do master.
+- `/dispositivos`: lista e desconexão dos até três dispositivos por conta.
 
 As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. O material de importação inclui 27 atividades e 81 rodadas. Dificuldades:
 
@@ -15,16 +17,17 @@ As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes,
 2. **Intermediário**: associações de imagens com instruções faladas.
 3. **Avançado**: organização de histórias em imagens.
 
-Não há leitura obrigatória nos jogos. Não gravamos voz e não verificamos a pronúncia ou a repetição. Favoritos e progresso ficam no dispositivo, separados da conta.
+Não há leitura obrigatória nos jogos. Não gravamos a voz das crianças e não verificamos a pronúncia ou a repetição. O master pode gravar a pronúncia das figuras no editor. Favoritos e progresso ficam no dispositivo, separados da conta.
 
 ## Configurar os serviços
 
+- **[Ativar planos, dispositivos e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md)** — preços, migração SQL e eventos de pagamento desta versão.
 - **[Atualizar para o painel das referências](ATUALIZAR-PAINEL-VISUAL.md)** — categorias novas, progresso, metas, gráfico e acesso direto.
 - [Cadastro e pagamentos](ATIVAR-CADASTRO-E-PAGAMENTOS.md).
 - [Google e perfil familiar](ATUALIZAR-GOOGLE-E-PERFIL.md).
 - **[Ativar a conta master e importar a biblioteca](ATIVAR-ACESSO-MASTER.md)** — necessário nesta atualização.
 
-Para uma instalação nova, execute `supabase/schema.sql`. Para a atualização de uma instalação já existente, execute `supabase/master-content-migration.sql`, configure `MASTER_USER_ID` e importe as atividades no painel. A biblioteca fica no banco, não é recriada nem sobrescrita ao reiniciar. Sem configuração ou sem assinatura, o sistema não libera jogos por fallback.
+Para uma instalação nova, execute `supabase/schema.sql` e depois `supabase/commercial-devices-migration.sql`. Para a atualização de uma instalação já existente, execute as migrações necessárias de conteúdo e `supabase/commercial-devices-migration.sql`, configure `MASTER_USER_ID` e importe as atividades no painel. A biblioteca fica no banco, não é recriada nem sobrescrita ao reiniciar. Sem configuração ou sem assinatura, o sistema não libera jogos por fallback.
 
 ## Executar
 
@@ -85,3 +88,5 @@ O primeiro nome da criança e o nome do responsável ficam no perfil autenticado
 Antes de vender, mantenha identificação comercial e atendimento publicados, termos e privacidade revisados, SMTP, limites de autenticação, proteção contra abuso e monitoramento configurados. Não há reembolso automático, exclusão autônoma de conta ou sincronização do progresso nesta versão.
 
 Para gravar a pronúncia de cada figura no painel master, siga [Gravar áudio das figuras](GRAVAR-AUDIO-DAS-FIGURAS.md). Em instalações existentes, execute `supabase/recorded-audio-migration.sql` uma vez no Supabase.
+
+A versão comercial possui três modalidades, até três dispositivos por conta e painel master de clientes/vendas. Para ativar em projeto existente ou novo, siga [Planos, dispositivos e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md), incluindo a migração SQL e os novos preços/eventos no Stripe.

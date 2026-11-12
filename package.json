@@ -10,7 +10,8 @@
     "test": "node --conditions=react-server --import tsx tests/run.ts",
     "test:e2e": "playwright test",
     "format": "prettier --write app components lib tests playwright*.config.ts package.json tsconfig.json",
-    "test:auth-ui": "playwright test --config=playwright.auth.config.ts"
+    "test:auth-ui": "playwright test --config=playwright.auth.config.ts",
+    "test:db": "node tests/database.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",

@@ -33,20 +33,25 @@ export default function Information() {
         acesso com Google usa a conta do adulto. Você pode editar ou apagar os
         nomes na área da conta.
       </p>
-      <h2>Mensalidade e cancelamento</h2>
+      <h2>Planos e cancelamento</h2>
       <p>
-        O plano custa R$ 50,00 por mês, com renovação automática até o
-        cancelamento. Criar conta não gera cobrança. A compra só é realizada ao
-        confirmar no checkout seguro do Stripe. Os métodos disponíveis aparecem
-        nessa etapa.
+        Há três opções: R$ 50,00 por mês com renovação automática; R$ 450,00 por
+        ano, cobrados de uma vez, com renovação anual automática; ou pagamento
+        único de R$ 500,00 por 12 meses, sem renovação automática. Criar conta
+        não gera cobrança. A compra só é realizada ao confirmar no checkout
+        seguro do Stripe. Os métodos disponíveis aparecem nessa etapa.
       </p>
       <p>
-        O acesso às atividades exige cadastro/login e assinatura ativa. A
-        biblioteca é organizada por animais, objetos e alimentos, em três níveis
-        de dificuldade. O proprietário pode atualizar o conteúdo. O cancelamento
-        é feito em Minha conta → Gerenciar assinatura e cancelamento. Ao
-        cancelar a renovação, você mantém acesso pelo período já pago. Falhas de
-        pagamento podem suspender o conteúdo de assinantes.
+        O acesso às atividades exige cadastro/login e assinatura ativa ou passe
+        de 12 meses válido. Cada conta pode cadastrar até três dispositivos;
+        cada navegador ou perfil conta como um dispositivo. É possível
+        desconectar aparelhos pela tela Dispositivos. As verificações no
+        servidor bloqueiam novas consultas de atividades em aparelhos
+        desconectados. A biblioteca é organizada por animais, objetos e
+        alimentos, em três níveis de dificuldade. O proprietário pode atualizar
+        o conteúdo. O cancelamento é feito em Minha conta → Gerenciar assinatura
+        e cancelamento. Ao cancelar a renovação, você mantém acesso pelo período
+        já pago. Falhas de pagamento podem suspender o conteúdo de assinantes.
       </p>
       <p>
         O cancelamento da renovação não gera reembolso automático. Direitos
@@ -64,9 +69,14 @@ export default function Information() {
       <p>
         O Stripe processa o pagamento; os dados de cartão não passam pelo
         FalaBrinca. O sistema guarda identificadores do cliente e da assinatura,
-        status e datas para gerenciar acesso. Supabase, Stripe e a hospedagem
-        tratam dados conforme suas próprias políticas. A voz das palavras é
-        oferecida pelo navegador/dispositivo e pode usar serviços do fabricante.
+        status, recebimentos, reembolsos e datas para gerenciar acesso. Também
+        são registrados dispositivos (identificador aleatório protegido e nome
+        do navegador/sistema), último acesso e contagem de logins acompanhados,
+        visíveis somente na própria conta e no painel do proprietário. Não
+        usamos impressão digital do aparelho nem armazenamos endereço IP para
+        esse controle. Supabase, Stripe e a hospedagem tratam dados conforme
+        suas próprias políticas. A voz das palavras é oferecida pelo
+        navegador/dispositivo e pode usar serviços do fabricante.
       </p>
       <h2>Instalação e conexão</h2>
       <p>

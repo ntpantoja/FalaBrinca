@@ -1,6 +1,7 @@
 import "server-only";
 import { customerId, HttpError, requireUser, stripeClient } from "./server";
-import { subscriptionFor } from "./billing";
+import { requireDevice } from "./devices";
+import { activePass, subscriptionFor } from "./billing";
 export function isMasterUser(userId: string) {
   const configured = process.env.MASTER_USER_ID?.trim();
   return !!configured && configured === userId;
@@ -21,10 +22,15 @@ export async function requireMember(request: Request) {
   if (isMasterUser(context.user.id))
     return { ...context, role: "master" as const };
   const customer = await customerId(context.db, context.user.id);
-  if (!customer || !(await subscriptionFor(stripeClient(), customer)).active)
+  const pass = await activePass(context.db, context.user.id);
+  if (
+    !pass &&
+    (!customer || !(await subscriptionFor(stripeClient(), customer)).active)
+  )
     throw new HttpError(
       403,
-      "Escolha o plano mensal para acessar as atividades.",
+      "Escolha uma modalidade de acesso para acessar as atividades.",
     );
+  await requireDevice(request, context.db, context.user.id);
   return { ...context, role: "subscriber" as const };
 }

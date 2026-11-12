@@ -3,11 +3,12 @@ import Link from "next/link";
 import { useEffect, useState, type FormEvent } from "react";
 import type { User } from "@supabase/supabase-js";
 import { browserAuth } from "../../lib/supabase-browser";
-import { PLAN } from "../../lib/plan";
+import { PLANS, type PlanId } from "../../lib/plan";
 import { type FamilyProfile } from "../../lib/profile";
 
 type Account = {
   active: boolean;
+  plan?: PlanId;
   status: string;
   canManage: boolean;
   isMaster?: boolean;
@@ -27,6 +28,7 @@ const statuses: Record<string, string> = {
   none: "Sem assinatura",
 };
 export default function AccountPage() {
+  const [selectedPlan, setSelectedPlan] = useState<PlanId>("monthly");
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [configured, setConfigured] = useState(false);
@@ -148,12 +150,12 @@ export default function AccountPage() {
     if (params.get("modo") === "login") setMode("login");
     if (params.has("assinatura"))
       setMessage(
-        "Escolha a assinatura mensal para acessar a biblioteca de atividades.",
+        "Escolha uma modalidade de pagamento para acessar a biblioteca de atividades.",
       );
     if (params.has("checkout"))
       setMessage(
         params.get("checkout") === "success"
-          ? "Você voltou do pagamento. Estamos consultando sua assinatura."
+          ? "Você voltou do pagamento. Estamos conferindo a liberação do seu acesso."
           : "O checkout foi fechado. Você pode escolher a assinatura quando quiser.",
       );
     if (params.has("reenviar")) setMode("signup");
@@ -338,7 +340,14 @@ export default function AccountPage() {
       if (!access) throw new Error("Entre na conta para continuar.");
       const response = await fetch(`/api/${path}`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${access}` },
+        headers: {
+          Authorization: `Bearer ${access}`,
+          "Content-Type": "application/json",
+        },
+        body:
+          path === "checkout"
+            ? JSON.stringify({ plan: selectedPlan })
+            : undefined,
       });
       const data = await response.json();
       if (!response.ok || !data.url)
@@ -580,7 +589,11 @@ export default function AccountPage() {
                 </div>
               )}
               <section className="entry-membership">
-                <h3>Sua assinatura</h3>
+                <h3>Seu acesso</h3>
+                {account?.plan && <p>{PLANS[account.plan].name}</p>}
+                <Link className="entry-link" href="/dispositivos">
+                  Gerenciar meus dispositivos (até 3)
+                </Link>
                 <span className="status-badge">
                   {loadingAccount
                     ? "Consultando…"
@@ -590,7 +603,7 @@ export default function AccountPage() {
                 </span>
                 {account?.periodEnd && (
                   <p>
-                    {account.cancelAtPeriodEnd
+                    {account.cancelAtPeriodEnd || account.plan === "yearly_pass"
                       ? "Acesso até"
                       : "Fim do período atual"}
                     :{" "}
@@ -835,12 +848,40 @@ export default function AccountPage() {
           </div>
         </section>
         <aside className="entry-plan kids-card" id="assinar">
-          <span className="entry-plan-label">ASSINATURA MENSAL</span>
+          <span className="entry-plan-label">ESCOLHA SEU ACESSO</span>
           <h2>Um mundo para descobrir 🌈</h2>
-          <div className="price">
-            {PLAN.label}
-            <span>/mês</span>
-          </div>
+          <fieldset className="plan-options">
+            <legend>Modalidade de pagamento</legend>
+            {(Object.entries(PLANS) as [PlanId, (typeof PLANS)[PlanId]][]).map(
+              ([id, plan]) => (
+                <label
+                  key={id}
+                  className={
+                    selectedPlan === id ? "plan-option selected" : "plan-option"
+                  }
+                >
+                  <input
+                    type="radio"
+                    name="billing-plan"
+                    value={id}
+                    checked={selectedPlan === id}
+                    onChange={() => setSelectedPlan(id)}
+                  />
+                  <span>
+                    <strong>
+                      {plan.name} · {plan.label}
+                      {id === "monthly"
+                        ? "/mês"
+                        : id === "annual"
+                          ? "/ano"
+                          : " uma vez"}
+                    </strong>
+                    <small>{plan.description}</small>
+                  </span>
+                </label>
+              ),
+            )}
+          </fieldset>
           <ul>
             <li>Atividades visuais com áudio e repetição.</li>
             <li>Oito categorias para explorar.</li>
@@ -848,8 +889,9 @@ export default function AccountPage() {
             <li>Painel dos pais e prática guiada.</li>
           </ul>
           <p>
-            Renovação automática até cancelar. O acesso continua até o fim do
-            período pago ao cancelar a renovação.
+            Até três dispositivos cadastrados por conta. Nos planos recorrentes,
+            cancelar a renovação mantém o acesso pelo período pago. O pagamento
+            único termina após 12 meses.
           </p>
           <button
             className="kids-action purple-action"
@@ -871,10 +913,10 @@ export default function AccountPage() {
             {account?.isMaster
               ? "Acesso master liberado"
               : account?.active
-                ? "Sua assinatura está ativa"
+                ? "Seu acesso está ativo"
                 : !user
                   ? "Crie sua conta ou entre para assinar"
-                  : "Assinar por R$ 50,00/mês"}
+                  : `${selectedPlan === "yearly_pass" ? "Comprar 12 meses por" : "Assinar por"} ${PLANS[selectedPlan].label}${selectedPlan === "monthly" ? "/mês" : selectedPlan === "annual" ? "/ano" : " uma vez"}`}
           </button>
           <small>
             Você confirma o pagamento no checkout seguro do Stripe. Criar uma

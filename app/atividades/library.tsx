@@ -174,6 +174,10 @@ export default function Library({
         cache: "no-store",
       });
       const data = await response.json();
+      if (response.status === 428) {
+        window.location.replace("/dispositivos");
+        return;
+      }
       if (response.status === 401 || response.status === 403) {
         window.location.replace("/conta?assinatura=necessaria");
         return;

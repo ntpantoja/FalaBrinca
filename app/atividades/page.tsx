@@ -25,6 +25,18 @@ export default function ActivitiesPage() {
       return;
     }
     try {
+      const device = await fetch("/api/devices", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      if (device.status === 409) {
+        window.location.replace("/dispositivos");
+        return;
+      }
+      if (!device.ok) {
+        const result = await device.json();
+        throw new Error(result.error);
+      }
       const response = await fetch("/api/library", {
         headers: { Authorization: `Bearer ${session.access_token}` },
         cache: "no-store",
@@ -32,6 +44,10 @@ export default function ActivitiesPage() {
       const result = await response.json();
       if (response.status === 401) {
         window.location.replace("/conta?modo=login");
+        return;
+      }
+      if (response.status === 428) {
+        window.location.replace("/dispositivos");
         return;
       }
       if (response.status === 403) {

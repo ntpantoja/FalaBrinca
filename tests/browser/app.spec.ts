@@ -5,7 +5,9 @@ test("o link abre direto o cadastro e a assinatura, sem apresentação ou acesso
 }) => {
   await page.goto("/");
   await expect(page.locator(".auth-entry")).toBeVisible();
-  await expect(page.locator(".entry-plan .price")).toContainText("R$ 50,00");
+  await expect(page.locator(".plan-options")).toContainText("R$ 50,00");
+  await expect(page.locator(".plan-options")).toContainText("R$ 450,00");
+  await expect(page.locator(".plan-options")).toContainText("R$ 500,00");
   await expect(page.locator(".marketing-main")).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Começar Atividade" }),
@@ -27,6 +29,8 @@ test("conteúdo e painel permanecem protegidos antes do pagamento", async ({
     "/api/activities/frutas",
     "/api/activities/premium",
     "/api/admin/activities",
+    "/api/admin/customers",
+    "/api/devices",
   ])
     expect((await request.get(path)).status()).toBe(401);
   for (const path of [

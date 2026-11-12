@@ -1,0 +1,52 @@
+do $$
+declare result text; details jsonb; original_end timestamptz;
+begin
+ if has_function_privilege('anon','public.register_account_device(uuid,text,text)','execute') then raise exception 'anon can register devices'; end if;
+ if has_function_privilege('authenticated','public.master_customer_dashboard(uuid,text,text,integer,text,text)','execute') then raise exception 'customer can view master panel'; end if;
+ if has_table_privilege('authenticated','public.access_passes','insert') then raise exception 'customer can grant access'; end if;
+ select public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device1','Chrome') into result;
+ if result <> 'ok' then raise exception 'cannot register first device'; end if;
+ perform public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device2','Safari');
+ perform public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device3','Firefox');
+ select public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device4','Edge') into result;
+ if result <> 'limit' then raise exception 'fourth device accepted'; end if;
+ select public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device1','Chrome') into result;
+ if result <> 'ok' then raise exception 'existing device not reusable'; end if;
+ update account_devices set revoked=true where token_hash='device2';
+ select public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device2','Safari') into result;
+ if result <> 'revoked' then raise exception 'revoked token reactivated silently'; end if;
+ select public.register_account_device('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','device4','Edge') into result;
+ if result <> 'ok' then raise exception 'released slot not available'; end if;
+ perform public.record_account_visit('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','2026-11-12T10:00:00Z');
+ perform public.record_account_visit('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','2026-11-12T10:00:00Z');
+ perform public.record_account_visit('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','2026-11-12T11:00:00Z');
+ if (select login_count from account_visits where user_id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') <> 2 then raise exception 'requests counted as extra logins'; end if;
+ perform public.apply_pass_payment('evt1','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cs1','pi1','price_pass',now(),now()+interval '1 year',50000);
+ select ends_at into original_end from access_passes where stripe_session_id='cs1';
+ perform public.apply_pass_payment('evt1','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cs1','pi1','price_pass',now(),now()+interval '2 year',50000);
+ perform public.apply_pass_payment('evt2','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cs1','pi1','price_pass',now(),now()+interval '2 year',50000);
+ if (select count(*) from payment_receipts) <> 1 or (select ends_at from access_passes where stripe_session_id='cs1') <> original_end then raise exception 'replayed webhook extends access or duplicates money'; end if;
+ perform public.apply_payment_refund('pi1',5000,false);
+ if (select revoked from access_passes where stripe_session_id='cs1') then raise exception 'partial refund revokes pass'; end if;
+ perform public.apply_payment_refund('pi1',50000,true);
+ perform public.apply_payment_refund('pi1',5000,false);
+ if not (select revoked from access_passes where stripe_session_id='cs1') then raise exception 'full refund not revoked'; end if;
+ if (select amount_refunded from payment_refunds where payment_intent_id='pi1') <> 50000 then raise exception 'old refund overwrites newer amount'; end if;
+ perform public.apply_payment_refund('pi_early',50000,true);
+ perform public.apply_pass_payment('evt_early','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cs_early','pi_early','price_pass',now(),now()+interval '1 year',50000);
+ if not (select revoked from access_passes where stripe_session_id='cs_early') then raise exception 'late paid event revives refunded pass'; end if;
+ insert into subscriptions(stripe_subscription_id,user_id,status,price_id,period_end,event_created) values('sub_annual','cccccccc-cccc-4ccc-8ccc-cccccccccccc','active','price_annual',extract(epoch from now()+interval '1 year'),1);
+ select public.master_customer_dashboard('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','price_monthly','price_annual',1,'','all') into details;
+ if (details->'metrics'->>'registered')::int <> 2 then raise exception 'master counted as customer'; end if;
+ if (details->'metrics'->>'mrrCents')::int <> 3750 then raise exception 'annual inflates MRR'; end if;
+ if (details->'metrics'->>'grossCents')::int <> 100000 or (details->'metrics'->>'netBeforeFeesCents')::int <> 0 then raise exception 'receipts or refunds incorrect'; end if;
+ select public.master_customer_dashboard('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','price_monthly','price_annual',1,'family@example.test','all') into details;
+ if (details->>'total')::int <> 1 then raise exception 'customer filtering failed'; end if;
+ if public.acquire_checkout_lock('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') is null then raise exception 'first checkout lock missing'; end if;
+ if public.acquire_checkout_lock('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') is not null then raise exception 'concurrent checkout allowed'; end if;
+ insert into auth.users(id,email,last_sign_in_at) values
+ ('dddddddd-dddd-4ddd-8ddd-dddddddddddd','lead@example.test',now()),
+ ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','never-entered@example.test',null);
+ select public.master_customer_dashboard('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','price_monthly','price_annual',1,'','logged_no_purchase') into details;
+ if (details->>'total')::int <> 1 then raise exception 'logged-in lead filter includes people who never logged in'; end if;
+end; $$;

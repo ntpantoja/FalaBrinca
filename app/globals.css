@@ -4821,3 +4821,29 @@ body {
 .audio-editor-actions button { border: 1px solid #ccd6df; border-radius: 10px; padding: 10px 12px; background: white; color: #24394a; cursor: pointer; }
 .audio-editor-actions button:disabled { opacity: .5; cursor: default; }
 .audio-editor small, .audio-editor p { font-size: 13px; line-height: 1.5; }
+
+.plan-options { border: 0; padding: 0; margin: 20px 0; display: grid; gap: 12px; min-width: 0; }
+.plan-options legend { font-weight: 700; margin-bottom: 12px; }
+.plan-option { display: flex; align-items: flex-start; gap: 10px; padding: 15px; border: 2px solid #e1e6f2; border-radius: 16px; cursor: pointer; }
+.plan-option.selected { border-color: #8050e3; background: #f6f1ff; }
+.plan-option input { width: auto; margin-top: 4px; flex-shrink: 0; accent-color: #8050e3; }
+.plan-option small { display: block; line-height: 1.6; margin-top: 6px; }
+.commercial-page { max-width: 720px; margin: 0 auto; padding: 24px 18px 60px; color: #24394a; }
+.commercial-page > .kids-card { padding: 24px; margin: 25px 0; }
+.commercial-page p { line-height: 1.7; overflow-wrap: anywhere; }
+.commercial-page header { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; align-items: center; }
+.device-list article { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; padding: 20px 0; border-top: 1px solid #e1e6f2; }
+.commercial-dashboard { max-width: 1100px; }
+.commercial-metrics { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 14px; }
+.commercial-metrics article { padding: 20px; display: grid; gap: 10px; }
+.commercial-metrics strong { font-size: 26px; }
+.commercial-filters { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; margin: 24px 0; }
+.commercial-filters label { display: grid; gap: 8px; flex: 1; min-width: 180px; }
+.commercial-page input, .commercial-page select { padding: 12px; border: 1px solid #dce3ec; border-radius: 10px; width: 100%; background: white; color: #24394a; }
+.customer-list { display: grid; gap: 16px; }
+.customer-list article { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 22px; min-width: 0; }
+.customer-list h2, .customer-list p { overflow-wrap: anywhere; }
+.commercial-page dl { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 14px; }
+.commercial-page dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.commercial-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin: 20px 0; }
+@media(max-width:600px) { .customer-list article { grid-template-columns: 1fr; } .commercial-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); } .commercial-metrics strong { font-size: 23px; } }

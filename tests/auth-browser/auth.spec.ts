@@ -35,6 +35,9 @@ const session = {
   user,
 };
 async function authMock(page: Page) {
+  await page.route("**/api/devices", (route) =>
+    route.fulfill({ json: { registered: true } }),
+  );
   await page.route("http://127.0.0.1:5400/auth/v1/**", async (route) => {
     const path = new URL(route.request().url()).pathname;
     if (path.endsWith("/signup"))
@@ -952,4 +955,130 @@ test("atividade inicia gravação automaticamente e narra a próxima figura sem 
       )
     ).join(" "),
   ).toContain(withAudio.rounds[1].answer);
+});
+
+test("cadastro oferece três modalidades com preços e renovação explícitos", async ({
+  page,
+}) => {
+  await authMock(page);
+  await page.goto("/");
+  await expect(page.getByRole("radio")).toHaveCount(3);
+  await page.getByRole("radio", { name: /Anual com renovação/ }).check();
+  await expect(page.locator(".plan-option.selected")).toContainText(
+    "R$ 450,00",
+  );
+  await expect(page.locator(".plan-option.selected")).toContainText(
+    "Renovação anual automática",
+  );
+  await page.getByRole("radio", { name: /12 meses sem renovação/ }).check();
+  await expect(page.locator(".plan-option.selected")).toContainText(
+    "R$ 500,00",
+  );
+  await expect(page.locator(".plan-option.selected")).toContainText(
+    "Sem renovação automática",
+  );
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+});
+test("servidor limita a três dispositivos, permite desconectar e isola contas — banco local simulado", async ({
+  playwright,
+  request,
+}) => {
+  const contexts = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      playwright.request.newContext({
+        baseURL: "http://localhost:3101",
+        extraHTTPHeaders: {
+          Authorization: "Bearer member-fixture",
+          Origin: "http://localhost:3101",
+        },
+      }),
+    ),
+  );
+  try {
+    for (let i = 0; i < 3; i++)
+      expect((await contexts[i].post("/api/devices")).status()).toBe(200);
+    expect((await contexts[3].post("/api/devices")).status()).toBe(409);
+    const mine = await contexts[0].get("/api/devices");
+    const devices = (await mine.json()).devices;
+    expect(devices).toHaveLength(3);
+    expect(devices.filter((d: { current: boolean }) => d.current)).toHaveLength(
+      1,
+    );
+    const victim = devices.find((d: { current: boolean }) => d.current);
+    expect(
+      (
+        await contexts[1].delete("/api/devices", { data: { id: victim.id } })
+      ).status(),
+    ).toBe(200);
+    expect((await contexts[0].post("/api/devices")).status()).toBe(409);
+    expect((await contexts[3].post("/api/devices")).status()).toBe(200);
+    const owner = await request.get("/api/devices", {
+      headers: { Authorization: "Bearer master-fixture" },
+    });
+    expect(
+      (await owner.json()).devices.every(
+        (d: { id: string }) =>
+          !devices.some((old: { id: string }) => old.id === d.id),
+      ),
+    ).toBe(true);
+    expect(
+      (
+        await request.get("/api/admin/customers", {
+          headers: { Authorization: "Bearer member-fixture" },
+        })
+      ).status(),
+    ).toBe(403);
+  } finally {
+    await Promise.all(contexts.map((c) => c.dispose()));
+  }
+});
+test("master consulta clientes sem compra e simula receitas sem inflar recorrência", async ({
+  page,
+}) => {
+  const owner = {
+    ...user,
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    email: "master@example.test",
+  };
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    { ...session, access_token: "master-fixture", user: owner },
+  );
+  await page.route("http://127.0.0.1:5400/auth/v1/user", (route) =>
+    route.fulfill({ json: owner }),
+  );
+  await page.goto("/admin/clientes");
+  await expect(
+    page.getByRole("heading", { name: "Clientes, acessos e vendas" }),
+  ).toBeVisible();
+  await expect(page.locator(".customer-list")).toContainText(
+    "member@example.test",
+  );
+  await page
+    .getByLabel("Situação", { exact: true })
+    .selectOption("no_purchase");
+  await page.getByRole("button", { name: "Consultar", exact: true }).click();
+  await expect(page.locator(".customer-list")).toContainText(
+    "Sem compra registrada",
+  );
+  await page
+    .getByLabel("Novas assinaturas mensais", { exact: true })
+    .fill("10");
+  await page.getByLabel("Novas assinaturas anuais", { exact: true }).fill("2");
+  await page.getByLabel("Novos pagamentos únicos", { exact: true }).fill("3");
+  await expect(page.locator(".sales-estimator")).toContainText("2.900,00");
+  await expect(page.locator(".sales-estimator")).toContainText("575,00");
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: "/tmp/falabrinca-clientes-vendas.png",
+    fullPage: true,
+  });
 });
