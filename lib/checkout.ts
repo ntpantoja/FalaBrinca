@@ -1,4 +1,5 @@
 import "server-only";
+import { billingTestPrice } from "./billing-test";
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import type { User } from "@supabase/supabase-js";
@@ -10,6 +11,7 @@ export async function prepareCheckout(
   user: User,
   db: ReturnType<typeof adminDb>,
   stripe: Stripe,
+  testPurchase = false,
 ) {
   if (!isAvailablePlanId(selected))
     throw new HttpError(
@@ -18,7 +20,14 @@ export async function prepareCheckout(
     );
   let release: (() => Promise<void>) | undefined;
   try {
-    const price = await planPrice(stripe, selected);
+    if (testPurchase && selected !== "monthly")
+      throw new HttpError(
+        400,
+        "O teste de R$ 5 usa apenas a modalidade mensal.",
+      );
+    const price = testPurchase
+      ? await billingTestPrice(stripe, user.id)
+      : await planPrice(stripe, selected);
     const lock = await db.rpc("acquire_checkout_lock", { p_user_id: user.id });
     if (lock.error)
       throw new HttpError(
@@ -125,6 +134,7 @@ export async function prepareCheckout(
       plan: selected,
       price_id: price.id,
       supabase_user_id: user.id,
+      ...(testPurchase ? { test_purchase: "true" } : {}),
     };
     const session = await stripe.checkout.sessions.create(
       {
@@ -134,8 +144,8 @@ export async function prepareCheckout(
         line_items: [{ price: price.id, quantity: 1 }],
         allow_promotion_codes: false,
         locale: "pt-BR",
-        success_url: `${appUrl()}/conta?checkout=success`,
-        cancel_url: `${appUrl()}/conta?checkout=cancelled`,
+        success_url: `${appUrl()}/conta?${testPurchase ? "gerenciar=1&" : ""}checkout=success`,
+        cancel_url: `${appUrl()}/conta?${testPurchase ? "gerenciar=1&" : ""}checkout=cancelled`,
         metadata,
         ...(PLANS[selected].mode === "subscription"
           ? { subscription_data: { metadata } }

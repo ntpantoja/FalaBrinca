@@ -1394,3 +1394,62 @@ test("master cria quebra-cabeça e memória pelo editor e abre a prévia correta
   await page.getByRole("button", { name: "Ver prévia", exact: true }).click();
   await expect(page.locator(".admin-preview .memory-grid")).toBeVisible();
 });
+
+test("conta autorizada envia a compra de teste de R$ 5 sem alterar a oferta pública", async ({
+  page,
+}) => {
+  await masterBrowser(page);
+  await page.route("**/api/account", (route) =>
+    route.fulfill({
+      json: {
+        active: true,
+        status: "master",
+        isMaster: true,
+        canManage: false,
+        testCheckoutEnabled: true,
+        canTestPurchase: true,
+      },
+    }),
+  );
+  let sent: unknown = null;
+  await page.route("**/api/checkout", async (route) => {
+    sent = route.request().postDataJSON();
+    await route.fulfill({
+      status: 503,
+      json: { error: "Checkout de teste interceptado" },
+    });
+  });
+  await page.goto("/conta?gerenciar=1");
+  await expect(
+    page.getByRole("region", { name: "Compra privada de teste" }),
+  ).toContainText("R$ 5,00/mês");
+  await expect(page.locator(".plan-options")).toContainText("R$ 50,00");
+  await expect(page.locator(".plan-options")).toContainText("R$ 450,00");
+  await page
+    .getByRole("button", { name: "Testar compra por R$ 5,00/mês", exact: true })
+    .click();
+  await expect(page.locator(".entry-feedback")).toContainText(
+    "Checkout de teste interceptado",
+  );
+  expect(sent).toEqual({ plan: "monthly", testPurchase: true });
+});
+test("compra de teste não aparece para visitante nem para cliente comum", async ({
+  page,
+}) => {
+  await authMock(page);
+  await page.goto("/");
+  await expect(
+    page.getByRole("button", {
+      name: "Testar compra por R$ 5,00/mês",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await paidApp(page);
+  await page.goto("/conta?gerenciar=1");
+  await expect(
+    page.getByRole("button", {
+      name: "Testar compra por R$ 5,00/mês",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+});

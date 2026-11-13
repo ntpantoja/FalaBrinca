@@ -111,6 +111,15 @@ function fixture() {
     },
     prices: {
       async retrieve(id: string) {
+        if (id === "price_private_test")
+          return {
+            id,
+            active: true,
+            unit_amount: 500,
+            currency: "brl",
+            type: "recurring",
+            recurring: { interval: "month", interval_count: 1 },
+          };
         const key =
           id === "price_monthly"
             ? "monthly"
@@ -409,4 +418,63 @@ test("pagamento único retirado é rejeitado no servidor antes de criar checkout
   });
   assert.equal(state.created.length, 0);
   assert.equal(state.writes.length, 0);
+});
+
+test("compra privada de R$ 5 aceita somente a conta autorizada e não altera os planos normais", async () => {
+  const names = [
+    "STRIPE_TEST_PRICE_ID",
+    "BILLING_TEST_USER_ID",
+    "BILLING_TEST_ENABLED",
+  ] as const;
+  const previous = Object.fromEntries(
+    names.map((key) => [key, process.env[key]]),
+  );
+  try {
+    process.env.STRIPE_TEST_PRICE_ID = "price_private_test";
+    process.env.BILLING_TEST_USER_ID = user.id;
+    delete process.env.BILLING_TEST_ENABLED;
+    const { state, db, stripe } = fixture();
+    await prepareCheckout("monthly", user, db, stripe, true);
+    assert.equal(PLANS.monthly.amount, 5000);
+    assert.equal(PLANS.annual.amount, 45000);
+    assert.deepEqual(state.created[0].line_items, [
+      { price: "price_private_test", quantity: 1 },
+    ]);
+    assert.equal(
+      (state.created[0].metadata as Record<string, string>).test_purchase,
+      "true",
+    );
+    assert.match(
+      state.created[0].success_url as string,
+      /gerenciar=1&checkout=success/,
+    );
+    const other = fixture();
+    await assert.rejects(
+      () =>
+        prepareCheckout(
+          "monthly",
+          { ...user, id: "other-user" },
+          other.db,
+          other.stripe,
+          true,
+        ),
+      { status: 403 },
+    );
+    assert.equal(other.state.created.length, 0);
+    await assert.rejects(
+      () => prepareCheckout("annual", user, other.db, other.stripe, true),
+      { status: 400 },
+    );
+    process.env.BILLING_TEST_ENABLED = "false";
+    await assert.rejects(
+      () => prepareCheckout("monthly", user, other.db, other.stripe, true),
+      { status: 403 },
+    );
+  } finally {
+    for (const key of names) {
+      const value = previous[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });

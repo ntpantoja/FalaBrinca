@@ -107,3 +107,23 @@ test("simulação separa entrada de caixa, recorrência e equivalente dos passes
   assert.equal(value.passEquivalent, 125);
   assert.equal(value.estimatedBalance, 2625);
 });
+
+import { matchesTestPrice } from "../lib/billing-test";
+test("preço privado exige R$ 5 em BRL por mês, sem aceitar cobrança única ou anual", () => {
+  const p = {
+    active: true,
+    unit_amount: 500,
+    currency: "brl",
+    type: "recurring",
+    recurring: { interval: "month", interval_count: 1 },
+  };
+  assert.equal(matchesTestPrice(p), true);
+  for (const change of [
+    { unit_amount: 5000 },
+    { currency: "usd" },
+    { active: false },
+    { type: "one_time" },
+    { recurring: { interval: "year", interval_count: 1 } },
+  ])
+    assert.equal(matchesTestPrice({ ...p, ...change }), false);
+});

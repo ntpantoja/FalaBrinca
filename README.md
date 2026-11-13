@@ -95,3 +95,5 @@ Para gravar a pronúncia de cada figura no painel master, siga [Gravar áudio da
 A versão comercial possui duas modalidades, até três dispositivos por conta e painel master de clientes/vendas. Para ativar em projeto existente ou novo, siga [Planos, dispositivos e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md), incluindo a migração SQL e os novos preços/eventos no Stripe.
 
 Veja [Sessões e painel master](SESSOES-E-PAINEL-MASTER.md) para os ajustes de permanência do login e [Custos de operação](CUSTOS-DE-OPERACAO.md) para o orçamento de referência.
+
+Para testar uma compra de R$ 5 sem mudar os preços dos clientes, siga [Teste privado de compra](TESTAR-COMPRA-R5.md). A opção aparece somente para a conta autorizada e depende de configurar um preço separado no Stripe.

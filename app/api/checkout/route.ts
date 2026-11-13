@@ -1,3 +1,4 @@
+import { testCheckoutEnabledFor } from "../../../lib/billing-test";
 import { isMasterUser } from "../../../lib/access";
 import {
   failure,
@@ -25,13 +26,29 @@ export async function POST(request: Request) {
     const selected = (input as { plan?: unknown })?.plan;
     if (!isAvailablePlanId(selected))
       throw new HttpError(400, "Escolha uma modalidade válida.");
+    const requestedTest = (input as { testPurchase?: unknown })?.testPurchase;
+    if (requestedTest !== undefined && typeof requestedTest !== "boolean")
+      throw new HttpError(400, "Confira a opção de teste de compra.");
+    const testPurchase =
+      (input as { testPurchase?: unknown })?.testPurchase === true;
     const { user, db } = await requireUser(request);
-    if (isMasterUser(user.id))
+    if (testPurchase && !testCheckoutEnabledFor(user.id))
+      throw new HttpError(
+        403,
+        "O teste de compra é exclusivo da conta autorizada.",
+      );
+    if (isMasterUser(user.id) && !testPurchase)
       throw new HttpError(
         409,
         "Sua conta master já tem acesso às atividades, sem contratar assinatura.",
       );
-    return await prepareCheckout(selected, user, db, stripeClient());
+    return await prepareCheckout(
+      selected,
+      user,
+      db,
+      stripeClient(),
+      testPurchase,
+    );
   } catch (error) {
     return failure(error);
   }

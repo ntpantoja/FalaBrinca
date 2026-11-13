@@ -36,32 +36,42 @@ export async function monthlyPrice(stripe: Stripe) {
 export async function subscriptionFor(stripe: Stripe, customer: string) {
   const current: Stripe.Subscription[] = [];
   const prices = configuredPriceIds();
+  const eligiblePrices = [
+    prices.monthly,
+    prices.annual,
+    process.env.STRIPE_TEST_PRICE_ID?.trim(),
+  ].filter(Boolean);
   for await (const s of stripe.subscriptions.list({
     customer,
     status: "all",
     limit: 100,
   })) {
-    if (
-      s.items.data.some((item) =>
-        [prices.monthly, prices.annual].filter(Boolean).includes(item.price.id),
-      )
-    )
+    if (s.items.data.some((item) => eligiblePrices.includes(item.price.id)))
       current.push(s);
   }
   const allowed = (s: Stripe.Subscription) =>
-    [prices.monthly, prices.annual].some((id) => !!id && hasAccess(s, id));
+    eligiblePrices.some((id) => !!id && hasAccess(s, id));
   const subscription =
     current.find(allowed) ??
     current.find(
       (s) => !["canceled", "incomplete_expired"].includes(s.status),
     ) ??
     current[0];
+  const isTestSubscription =
+    !!subscription &&
+    !!process.env.STRIPE_TEST_PRICE_ID?.trim() &&
+    subscription.items.data.some(
+      (item) => item.price.id === process.env.STRIPE_TEST_PRICE_ID?.trim(),
+    );
   return {
     subscription,
+    isTestSubscription,
     active: !!subscription && allowed(subscription),
-    plan: subscription
-      ? planForPrice(subscription.items.data[0]?.price.id)
-      : undefined,
+    plan: isTestSubscription
+      ? ("monthly" as const)
+      : subscription
+        ? planForPrice(subscription.items.data[0]?.price.id)
+        : undefined,
   };
 }
 export async function activePass(

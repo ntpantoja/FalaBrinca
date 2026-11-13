@@ -14,6 +14,12 @@ import { type FamilyProfile } from "../../lib/profile";
 
 type Account = {
   active: boolean;
+  testCheckoutEnabled?: boolean;
+  testBillingUnavailable?: boolean;
+  canTestPurchase?: boolean;
+  isTestSubscription?: boolean;
+  testSubscriptionStatus?: string | null;
+  testCancelAtPeriodEnd?: boolean;
   plan?: PlanId;
   status: string;
   canManage: boolean;
@@ -330,7 +336,7 @@ export default function AccountPage() {
       setBusy(false);
     }
   }
-  async function billing(path: "checkout" | "portal") {
+  async function billing(path: "checkout" | "portal", testPurchase = false) {
     setBusy(true);
     setMessage("");
     try {
@@ -341,7 +347,10 @@ export default function AccountPage() {
         },
         body:
           path === "checkout"
-            ? JSON.stringify({ plan: selectedPlan })
+            ? JSON.stringify({
+                plan: testPurchase ? "monthly" : selectedPlan,
+                ...(testPurchase ? { testPurchase: true } : {}),
+              })
             : undefined,
       });
       const data = await response.json();
@@ -593,9 +602,69 @@ export default function AccountPage() {
                   )}
                 </div>
               )}
+              {(account?.testCheckoutEnabled ||
+                account?.testSubscriptionStatus) && (
+                <section
+                  className="entry-membership billing-test-card"
+                  aria-label="Compra privada de teste"
+                >
+                  <h3>Compra de teste · R$ 5,00/mês</h3>
+                  <p>
+                    Exclusivo da conta autorizada. Este teste cria uma
+                    assinatura mensal de R$ 5,00, com renovação automática até
+                    cancelar. Os planos dos clientes continuam em R$ 50/mês e R$
+                    450/ano.
+                  </p>
+                  <p>
+                    No modo de produção do Stripe, o valor é cobrado de verdade.
+                    Após conferir o processo, cancele a assinatura de teste em
+                    Gerenciar pagamento e cancelamento.
+                  </p>
+                  {account.testBillingUnavailable && (
+                    <p>
+                      Não foi possível consultar o teste agora. Seu acesso
+                      master continua ativo; tente atualizar o status em
+                      instantes.
+                    </p>
+                  )}
+                  {account.testSubscriptionStatus && (
+                    <p>
+                      Assinatura de teste:{" "}
+                      {statuses[account.testSubscriptionStatus] ??
+                        account.testSubscriptionStatus}
+                      {account.testCancelAtPeriodEnd
+                        ? " · Renovação cancelada"
+                        : ""}
+                      .
+                    </p>
+                  )}
+                  <button
+                    className="kids-action gold-action"
+                    disabled={
+                      busy || loadingAccount || !account.canTestPurchase
+                    }
+                    onClick={() => void billing("checkout", true)}
+                  >
+                    Testar compra por R$ 5,00/mês
+                  </button>
+                  <button
+                    className="entry-link"
+                    disabled={busy || loadingAccount}
+                    onClick={() => void refresh()}
+                  >
+                    Atualizar status do teste
+                  </button>
+                </section>
+              )}
               <section className="entry-membership">
                 <h3>Seu acesso</h3>
-                {account?.plan && <p>{PLANS[account.plan].name}</p>}
+                {account?.plan && (
+                  <p>
+                    {account.isTestSubscription
+                      ? "Assinatura de teste · R$ 5,00/mês"
+                      : PLANS[account.plan].name}
+                  </p>
+                )}
                 <Link className="entry-link" href="/dispositivos">
                   Gerenciar meus dispositivos (até 3)
                 </Link>
