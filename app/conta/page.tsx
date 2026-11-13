@@ -15,6 +15,7 @@ import { type FamilyProfile } from "../../lib/profile";
 type Account = {
   active: boolean;
   testCheckoutEnabled?: boolean;
+  testCheckoutSetup?: { status: string; message: string };
   testBillingUnavailable?: boolean;
   canTestPurchase?: boolean;
   isTestSubscription?: boolean;
@@ -413,6 +414,14 @@ export default function AccountPage() {
       window.location.replace(account.isMaster ? "/admin" : "/atividades");
   }, [managing, user?.id, account?.active, account?.isMaster, profileState]);
   useEffect(() => {
+    if (account?.isMaster && window.location.hash === "#teste-compra")
+      requestAnimationFrame(() =>
+        document
+          .getElementById("teste-compra")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" }),
+      );
+  }, [account?.isMaster]);
+  useEffect(() => {
     if (
       !user ||
       account?.active ||
@@ -602,13 +611,20 @@ export default function AccountPage() {
                   )}
                 </div>
               )}
-              {(account?.testCheckoutEnabled ||
+              {(account?.isMaster ||
+                account?.testCheckoutEnabled ||
                 account?.testSubscriptionStatus) && (
                 <section
+                  id="teste-compra"
                   className="entry-membership billing-test-card"
                   aria-label="Compra privada de teste"
                 >
                   <h3>Compra de teste · R$ 5,00/mês</h3>
+                  {account.testCheckoutSetup && (
+                    <p className="billing-test-setup" role="status">
+                      {account.testCheckoutSetup.message}
+                    </p>
+                  )}
                   <p>
                     Exclusivo da conta autorizada. Este teste cria uma
                     assinatura mensal de R$ 5,00, com renovação automática até

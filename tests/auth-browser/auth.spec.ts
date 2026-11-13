@@ -1126,7 +1126,7 @@ for (const entry of ["/", "/conta?modo=login"])
     const shortcuts = page.getByRole("navigation", {
       name: "Atalhos do painel master",
     });
-    await expect(shortcuts.getByRole("link")).toHaveCount(4);
+    await expect(shortcuts.getByRole("link")).toHaveCount(5);
     await shortcuts.getByRole("link", { name: /Gestão de conteúdo/ }).click();
     await page.waitForURL("**/admin/conteudo");
     await expect(
@@ -1452,4 +1452,26 @@ test("compra de teste não aparece para visitante nem para cliente comum", async
       exact: true,
     }),
   ).toHaveCount(0);
+});
+
+test("dashboard master tem atalho de R$ 5 e mostra diagnóstico em vez de ocultar o teste", async ({
+  page,
+}) => {
+  await masterBrowser(page);
+  await page.goto("/admin");
+  await page.getByRole("link", { name: /Teste de compra · R\$ 5/ }).click();
+  await expect(page).toHaveURL(/\/conta\?gerenciar=1#teste-compra$/);
+  const testCard = page.getByRole("region", {
+    name: "Compra privada de teste",
+  });
+  await expect(testCard).toBeVisible();
+  await expect(testCard).toContainText(
+    "Esta implantação não recebeu STRIPE_TEST_PRICE_ID",
+  );
+  await expect(
+    testCard.getByRole("button", {
+      name: "Testar compra por R$ 5,00/mês",
+      exact: true,
+    }),
+  ).toBeDisabled();
 });

@@ -174,6 +174,15 @@ export default function MasterDashboard() {
                 <p>Consultar e gerenciar seu acesso.</p>
               </div>
             </Link>
+            <Link className="kids-card" href="/conta?gerenciar=1#teste-compra">
+              <span aria-hidden="true">💳</span>
+              <div>
+                <h2>Teste de compra · R$ 5</h2>
+                <p>
+                  Abrir o checkout privado ou conferir a configuração do teste.
+                </p>
+              </div>
+            </Link>
             <Link className="kids-card" href="/dispositivos">
               <span aria-hidden="true">📱</span>
               <div>

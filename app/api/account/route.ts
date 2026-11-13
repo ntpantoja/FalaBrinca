@@ -1,4 +1,7 @@
-import { testCheckoutEnabledFor } from "../../../lib/billing-test";
+import {
+  billingTestSetup,
+  testCheckoutEnabledFor,
+} from "../../../lib/billing-test";
 import { NextResponse } from "next/server";
 import {
   customerId,
@@ -38,6 +41,7 @@ export async function GET(request: Request) {
           canManage: !!customer,
           isMaster: true,
           testCheckoutEnabled,
+          testCheckoutSetup: billingTestSetup(user.id),
           canTestPurchase:
             testCheckoutEnabled && !ongoing && !testBillingUnavailable,
           testBillingUnavailable,

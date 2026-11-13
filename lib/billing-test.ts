@@ -1,17 +1,36 @@
 import "server-only";
 import type Stripe from "stripe";
 import { HttpError } from "./server";
-export function testCheckoutEnabledFor(userId: string) {
+export function billingTestSetup(userId: string) {
+  if (!process.env.STRIPE_TEST_PRICE_ID?.trim())
+    return {
+      status: "missing_price",
+      message:
+        "Esta implantação não recebeu STRIPE_TEST_PRICE_ID. Confira a variável no ambiente Produção da Vercel e reimplante após salvar.",
+    };
   if (process.env.BILLING_TEST_ENABLED?.trim().toLowerCase() === "false")
-    return false;
+    return {
+      status: "disabled",
+      message:
+        "O teste está desativado por BILLING_TEST_ENABLED=false nesta implantação. Para ativar, defina true na Vercel e reimplante.",
+    };
   const allowed =
     process.env.BILLING_TEST_USER_ID?.trim() ||
     process.env.MASTER_USER_ID?.trim();
-  return (
-    !!process.env.STRIPE_TEST_PRICE_ID?.trim() &&
-    !!allowed &&
-    userId === allowed
-  );
+  if (!allowed || userId !== allowed)
+    return {
+      status: "different_account",
+      message:
+        "O teste foi reservado a outra conta em BILLING_TEST_USER_ID. Para usar a conta master, remova essa variável na Vercel ou ajuste o ID autorizado e reimplante.",
+    };
+  return {
+    status: "ready",
+    message:
+      "Configuração de teste encontrada nesta implantação. O preço de R$ 5 e a recorrência serão conferidos pelo Stripe ao abrir o checkout.",
+  };
+}
+export function testCheckoutEnabledFor(userId: string) {
+  return billingTestSetup(userId).status === "ready";
 }
 export function matchesTestPrice(price: {
   active: boolean;

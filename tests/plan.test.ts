@@ -127,3 +127,32 @@ test("preço privado exige R$ 5 em BRL por mês, sem aceitar cobrança única ou
   ])
     assert.equal(matchesTestPrice({ ...p, ...change }), false);
 });
+
+import { billingTestSetup } from "../lib/billing-test";
+test("diagnóstico do teste distingue variável ausente, desativação e conta diferente", () => {
+  const keys = [
+    "STRIPE_TEST_PRICE_ID",
+    "BILLING_TEST_ENABLED",
+    "BILLING_TEST_USER_ID",
+    "MASTER_USER_ID",
+  ] as const;
+  const previous = Object.fromEntries(keys.map((k) => [k, process.env[k]]));
+  try {
+    delete process.env.STRIPE_TEST_PRICE_ID;
+    assert.equal(billingTestSetup("owner").status, "missing_price");
+    process.env.STRIPE_TEST_PRICE_ID = "price_private_test";
+    process.env.BILLING_TEST_ENABLED = "false";
+    assert.equal(billingTestSetup("owner").status, "disabled");
+    process.env.BILLING_TEST_ENABLED = "true";
+    process.env.MASTER_USER_ID = "owner";
+    process.env.BILLING_TEST_USER_ID = "another";
+    assert.equal(billingTestSetup("owner").status, "different_account");
+    delete process.env.BILLING_TEST_USER_ID;
+    assert.equal(billingTestSetup("owner").status, "ready");
+  } finally {
+    for (const key of keys) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  }
+});

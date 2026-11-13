@@ -9,7 +9,7 @@ Os planos públicos continuam em R$ 50/mês e R$ 450/ano. A compra de teste é u
 3. Copie o **ID do preço** (`price_...`). Não copie o ID `prod_...`.
 4. Na Vercel, em **Configurações → Variáveis de ambiente**, adicione `STRIPE_TEST_PRICE_ID` com esse ID. Pode usar **Configuração**; o valor só é lido no servidor. Não altere `STRIPE_PRICE_ID` nem `STRIPE_ANNUAL_PRICE_ID`.
 5. Aplique ao ambiente em uso e reimplante. Se já existir `BILLING_TEST_ENABLED=false`, mude para `true` para ativar.
-6. Entre com sua conta master, abra **Minha conta** no dashboard ou acesse `https://falabrinca-43kf.vercel.app/conta?gerenciar=1`.
+6. Entre com sua conta master e clique no atalho **Teste de compra · R$ 5** no dashboard, ou acesse `https://falabrinca-43kf.vercel.app/conta?gerenciar=1#teste-compra`.
 7. Procure **Compra de teste · R$ 5,00/mês** e clique em **Testar compra por R$ 5,00/mês**.
 8. Confira o valor no checkout do Stripe e conclua o pagamento. A volta abre sua conta para consultar o status e gerenciar o cancelamento.
 
@@ -44,3 +44,13 @@ Para testar o fluxo completo com uma conta comum:
 O botão deixa de ser oferecido ao master quando outro UUID é escolhido. Nenhum outro cliente pode comprar por R$ 5 apenas alterando o navegador ou o corpo da requisição: o servidor valida a identidade, o valor, a moeda e a recorrência.
 
 Não são permitidas compras de teste anuais, preços diferentes de R$ 5, nem uma segunda compra enquanto houver assinatura em andamento ou passe válido. As assinaturas do preço de teste são identificadas separadamente e não entram na receita recorrente dos planos comerciais do dashboard; use o Stripe para conferir os recebimentos de teste. Os webhooks existentes atendem a confirmação e o cancelamento, sem criar outro destino.
+
+## Quando o teste não aparece ou está indisponível
+
+O dashboard master possui um atalho permanente para o teste. A área da conta master mostra o card mesmo quando não é possível comprar, em vez de escondê-lo. A mensagem informa o estado lido pelo servidor da implantação atual:
+
+- `STRIPE_TEST_PRICE_ID` ausente nesta implantação: confira o escopo **Produção** e reimplante após salvar.
+- `BILLING_TEST_ENABLED=false`: o teste está desativado; use `true` para reativar e reimplante.
+- `BILLING_TEST_USER_ID` aponta outra conta: entre na conta escolhida ou remova a variável para voltar a usar o master, depois reimplante.
+
+Essas mensagens não expõem chaves ou IDs de outras contas. A opção só cria checkout se a configuração e a identidade autorizarem; a visibilidade do card não libera uma cobrança por conta própria. Se o dashboard não mostrar o novo atalho após a publicação, confira se o domínio está associado à implantação mais recente da branch main.
