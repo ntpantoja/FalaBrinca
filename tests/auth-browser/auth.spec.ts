@@ -247,7 +247,15 @@ for (const activity of catalog)
     );
     await page.goto("/atividades");
     await page
-      .getByRole("button", { name: "Começar Atividade", exact: true })
+      .getByRole("button", {
+        name:
+          activity.kind === "puzzle"
+            ? /Quebra-cabeças/
+            : activity.kind === "memory"
+              ? /Jogos de memória/
+              : "Começar Atividade",
+        exact: false,
+      })
       .click();
     await page
       .getByRole("button", { name: categories[activity.category], exact: true })
@@ -325,6 +333,21 @@ for (const activity of catalog)
     await expect(page.locator(".reward-stars")).toContainText(
       activity.kind === "memory" ? "+9" : "+3",
     );
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const progress = JSON.parse(
+            localStorage.getItem("falabrinca-progress-v3")!,
+          );
+          return Object.values(
+            progress.practice.dailyUsage as Record<
+              string,
+              { activities: number }
+            >,
+          ).reduce((sum, day) => sum + day.activities, 0);
+        }),
+      )
+      .toBe(1);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -1474,4 +1497,111 @@ test("dashboard master tem atalho de R$ 5 e mostra diagnóstico em vez de oculta
       exact: true,
     }),
   ).toBeDisabled();
+});
+
+test("metas diárias são salvas e modalidades permanecem separadas", async ({
+  page,
+}) => {
+  await authMock(page);
+  await page.addInitScript(
+    (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
+    session,
+  );
+  await page.route("**/api/profile", (r) =>
+    r.fulfill({ json: { profile: null } }),
+  );
+  await page.route("**/api/library", (r) =>
+    r.fulfill({ json: { activities: catalog, role: "subscriber" } }),
+  );
+  await page.goto("/atividades");
+  await page.getByRole("button", { name: "Pais", exact: true }).click();
+  await page.getByLabel("Minutos por dia").fill("10");
+  await page.getByLabel("Atividades por dia").fill("3");
+  await page.getByRole("button", { name: "Salvar metas" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Metas diárias salvas" }),
+  ).toBeVisible();
+  await page.reload();
+  await page.getByRole("button", { name: "Pais", exact: true }).click();
+  await expect(page.getByLabel("Minutos por dia")).toHaveValue("10");
+  await expect(page.getByLabel("Atividades por dia")).toHaveValue("3");
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page.getByRole("button", { name: /Quebra-cabeças/ }).click();
+  await page.getByRole("button", { name: "Animais", exact: true }).click();
+  for (const difficulty of [
+    "Inicial: ouvir e repetir",
+    "Intermediário: associar figuras",
+    "Avançado: histórias visuais",
+  ]) {
+    await page.getByRole("button", { name: difficulty, exact: true }).click();
+    const cards = page.locator(".kids-activity-open");
+    for (const label of await cards.allTextContents())
+      expect(label).toContain("Quebra-cabeça");
+  }
+});
+
+test("meta de tempo registra prática mas exclui pausa", async ({ page }) => {
+  await paidApp(page);
+  await page.clock.install();
+  await page.goto("/atividades");
+  await page.getByRole("button", { name: "Pais", exact: true }).click();
+  await page.getByLabel("Minutos por dia").fill("1");
+  await page.getByRole("button", { name: "Salvar metas" }).click();
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Começar Atividade", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Alimentos", exact: true }).click();
+  await page
+    .getByRole("button", { name: `Jogar ${catalog[0].title}`, exact: true })
+    .click();
+  await expect(page.locator(".word-hero-card")).toBeVisible();
+  await page.clock.fastForward(61000);
+  await page
+    .getByRole("button", { name: "Fazer uma pausa", exact: true })
+    .click();
+  const before = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("falabrinca-progress-v3")!).practice
+        .dailyUsage,
+  );
+  await page.clock.fastForward(120000);
+  const after = await page.evaluate(
+    () =>
+      JSON.parse(localStorage.getItem("falabrinca-progress-v3")!).practice
+        .dailyUsage,
+  );
+  expect(after).toEqual(before);
+  await page
+    .getByRole("button", { name: "Voltar às categorias", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page.getByRole("button", { name: "Voltar", exact: true }).click();
+  await page.getByRole("button", { name: "Pais", exact: true }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "Combinado alcançado" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Meta de atividades")).toHaveCount(0);
+});
+
+test("master filtra modalidade e categoria e cria formato correspondente", async ({
+  page,
+}) => {
+  await masterBrowser(page);
+  await page.goto("/admin/conteudo");
+  await page.getByRole("button", { name: /^Quebra-cabeças \(/ }).click();
+  await page.getByLabel("Filtrar categoria").selectOption("animals");
+  for (const text of await page
+    .locator(".admin-activity-list article")
+    .allTextContents()) {
+    expect(text).toContain("Animais");
+    expect(text).toContain("Quebra-cabeça");
+  }
+  await page
+    .getByRole("button", { name: "+ Nova atividade", exact: true })
+    .click();
+  await expect(
+    page.getByLabel("Formato da atividade", { exact: true }),
+  ).toHaveValue("puzzle");
+  await expect(page.locator(".choice-editor")).toHaveCount(1);
 });

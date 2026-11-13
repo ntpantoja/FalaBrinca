@@ -21,6 +21,8 @@ export type RewardGoal = {
   redeemedAt?: string;
 };
 export type PracticeData = {
+  dailyPlan: { minutes: number | null; activities: number | null };
+  dailyUsage: Record<string, { milliseconds: number; activities: number }>;
   attempts: SelectionAttempt[];
   words: Record<string, PracticedWord>;
   sessions: PracticeSession[];
@@ -30,6 +32,8 @@ export type PracticeData = {
   showLabels: boolean;
 };
 export const emptyPractice: PracticeData = {
+  dailyPlan: { minutes: null, activities: null },
+  dailyUsage: {},
   attempts: [],
   words: {},
   sessions: [],
@@ -87,7 +91,33 @@ export function readPractice(input: unknown): PracticeData {
   const p = input as Record<string, unknown>;
   const validDate = (v: unknown): v is string =>
     typeof v === "string" && Number.isFinite(Date.parse(v));
+  const plan = p.dailyPlan as Partial<PracticeData["dailyPlan"]> | undefined;
+  const target = (n: unknown, max: number) =>
+    typeof n === "number" && Number.isInteger(n) && n > 0 && n <= max
+      ? n
+      : null;
+  const usage =
+    p.dailyUsage && typeof p.dailyUsage === "object"
+      ? Object.entries(p.dailyUsage)
+          .filter(
+            ([day, value]) =>
+              /^\d{4}-\d{2}-\d{2}$/.test(day) &&
+              value &&
+              typeof value === "object" &&
+              Number.isFinite(value.milliseconds) &&
+              value.milliseconds >= 0 &&
+              Number.isInteger(value.activities) &&
+              value.activities >= 0,
+          )
+          .sort(([a], [b]) => b.localeCompare(a))
+          .slice(0, 30)
+      : [];
   return {
+    dailyPlan: {
+      minutes: target(plan?.minutes, 120),
+      activities: target(plan?.activities, 100),
+    },
+    dailyUsage: Object.fromEntries(usage),
     attempts: Array.isArray(p.attempts)
       ? p.attempts
           .filter(

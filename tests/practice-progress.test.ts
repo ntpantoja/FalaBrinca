@@ -72,3 +72,21 @@ test("dados antigos ou inválidos não quebram o novo painel", () => {
   assert.equal(safe.showLabels, false);
   assert.equal(wordKey(" GATO "), "gato");
 });
+
+test("metas diárias preservam compatibilidade e rejeitam valores inválidos", () => {
+  assert.deepEqual(readPractice({}).dailyPlan, {
+    minutes: null,
+    activities: null,
+  });
+  assert.deepEqual(
+    readPractice({
+      dailyPlan: { minutes: -1, activities: Infinity },
+      dailyUsage: { bad: { milliseconds: NaN, activities: -1 } },
+    }).dailyUsage,
+    {},
+  );
+  assert.deepEqual(
+    readPractice({ dailyPlan: { minutes: 10, activities: 3 } }).dailyPlan,
+    { minutes: 10, activities: 3 },
+  );
+});

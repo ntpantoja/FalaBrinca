@@ -1,4 +1,9 @@
 "use client";
+import {
+  activityGroup,
+  activityGroups,
+  type ActivityGroup,
+} from "../../../lib/activity-groups";
 import Link from "next/link";
 import { authenticatedFetch } from "../../../lib/session";
 import { useEffect, useState, type FormEvent } from "react";
@@ -53,6 +58,10 @@ export default function Admin() {
   const [editor, setEditor] = useState<ManagedActivity | null>(null);
   const [creating, setCreating] = useState(false);
   const [query, setQuery] = useState("");
+  const [group, setGroup] = useState<ActivityGroup>("learning");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [levelFilter, setLevelFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [preview, setPreview] = useState<ManagedActivity | null>(null);
   const [uploading, setUploading] = useState(false);
   async function api(path: string, options: RequestInit = {}) {
@@ -215,6 +224,11 @@ export default function Admin() {
           body: JSON.stringify(data),
         },
       );
+      setGroup(activityGroup(data.kind));
+      setCategoryFilter("");
+      setLevelFilter("");
+      setStatusFilter("");
+      setQuery("");
       setEditor(null);
       setMessage(
         "Atividade salva. Os assinantes verão as alterações ao recarregar a biblioteca.",
@@ -298,6 +312,16 @@ export default function Admin() {
       : preview?.kind === "memory"
         ? MemoryActivity
         : Activity;
+  const visibleActivities = activities.filter(
+    (a) =>
+      activityGroup(a.kind) === group &&
+      (!categoryFilter || a.category === categoryFilter) &&
+      (!levelFilter || a.difficulty === levelFilter) &&
+      (!statusFilter || a.published === (statusFilter === "published")) &&
+      `${a.title} ${categories[a.category]}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
   return (
     <>
       <header className="family-header">
@@ -695,6 +719,70 @@ export default function Admin() {
           </form>
         ) : (
           <>
+            <nav
+              className="admin-toolbar"
+              aria-label="Modalidades de atividades"
+            >
+              {Object.entries(activityGroups).map(([key, label]) => (
+                <button
+                  className={group === key ? "primary" : "secondary"}
+                  aria-pressed={group === key}
+                  key={key}
+                  onClick={() => setGroup(key as ActivityGroup)}
+                >
+                  {label} (
+                  {
+                    activities.filter((a) => activityGroup(a.kind) === key)
+                      .length
+                  }
+                  )
+                </button>
+              ))}
+            </nav>
+            <div className="admin-toolbar">
+              <label>
+                Categoria
+                <select
+                  aria-label="Filtrar categoria"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                >
+                  <option value="">Todas as categorias</option>
+                  {Object.entries(categories).map(([key, label]) => (
+                    <option value={key} key={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Dificuldade
+                <select
+                  aria-label="Filtrar dificuldade"
+                  value={levelFilter}
+                  onChange={(e) => setLevelFilter(e.target.value)}
+                >
+                  <option value="">Todas as dificuldades</option>
+                  {Object.entries(difficulties).map(([key, label]) => (
+                    <option value={key} key={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Publicação
+                <select
+                  aria-label="Filtrar publicação"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">Publicadas e rascunhos</option>
+                  <option value="published">Publicadas</option>
+                  <option value="draft">Rascunhos</option>
+                </select>
+              </label>
+            </div>
             <div className="admin-toolbar">
               <label className="search-box">
                 <span>⌕</span>
@@ -710,7 +798,16 @@ export default function Admin() {
                 className="primary"
                 onClick={() => {
                   setCreating(true);
-                  setEditor(blank());
+                  const activity = blank();
+                  if (group !== "learning") {
+                    activity.kind = group;
+                    activity.difficulty =
+                      group === "memory" ? "intermediate" : "beginner";
+                    if (group === "puzzle")
+                      activity.content.rounds[0].choices =
+                        activity.content.rounds[0].choices.slice(0, 1);
+                  }
+                  setEditor(activity);
                   setMessage("");
                 }}
               >
@@ -734,50 +831,51 @@ export default function Admin() {
               </span>
             </div>
             <div className="admin-activity-list">
-              {activities
-                .filter((a) =>
-                  `${a.title} ${categories[a.category]}`
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-                )
-                .map((a) => (
-                  <article key={a.id}>
-                    <span className="admin-card-icon">{a.emoji}</span>
-                    <div>
-                      <h2>{a.title}</h2>
-                      <p>
-                        {categories[a.category]} · {difficulties[a.difficulty]}{" "}
-                        · {a.content.rounds.length} rodadas
-                      </p>
-                      <small>
-                        {a.published
-                          ? "Publicada"
-                          : "Rascunho · não aparece para os assinantes"}
-                      </small>
-                    </div>
-                    <div className="admin-row-actions">
-                      <button
-                        className="secondary"
-                        disabled={busy}
-                        onClick={() => {
-                          setCreating(false);
-                          setEditor(structuredClone(a));
-                          setMessage("");
-                        }}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        className="delete-button"
-                        disabled={busy}
-                        onClick={() => void remove(a)}
-                      >
-                        Apagar
-                      </button>
-                    </div>
-                  </article>
-                ))}
+              {visibleActivities.map((a) => (
+                <article key={a.id}>
+                  <span className="admin-card-icon">{a.emoji}</span>
+                  <div>
+                    <h2>{a.title}</h2>
+                    <p>
+                      {categories[a.category]} · {kindLabels[a.kind]} ·{" "}
+                      {difficulties[a.difficulty]} · {a.content.rounds.length}{" "}
+                      rodadas
+                    </p>
+                    <small>
+                      {a.published
+                        ? "Publicada"
+                        : "Rascunho · não aparece para os assinantes"}
+                    </small>
+                  </div>
+                  <div className="admin-row-actions">
+                    <button
+                      className="secondary"
+                      disabled={busy}
+                      onClick={() => {
+                        setCreating(false);
+                        setEditor(structuredClone(a));
+                        setMessage("");
+                      }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      className="delete-button"
+                      disabled={busy}
+                      onClick={() => void remove(a)}
+                    >
+                      Apagar
+                    </button>
+                  </div>
+                </article>
+              ))}
             </div>
+            {!!activities.length && !visibleActivities.length && (
+              <p role="status">
+                Nenhuma atividade nesta seleção. Escolha outra modalidade ou
+                ajuste os filtros.
+              </p>
+            )}
             {!activities.length && (
               <div className="empty-state">
                 <h2>Sua biblioteca está pronta para começar.</h2>

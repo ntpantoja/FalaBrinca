@@ -18,6 +18,10 @@ As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes,
 2. **Intermediário**: associações de imagens com instruções faladas.
 3. **Avançado**: organização de histórias em imagens.
 
+O editor master separa **Figuras e linguagem**, **Quebra-cabeças** e **Jogos de memória**, com filtros de categoria, dificuldade e publicação. A área infantil mantém essas modalidades separadas ao trocar de dificuldade.
+
+No **Painel dos Pais → Combinado de hoje**, configure metas opcionais de minutos e/ou atividades completas por dia. As barras mostram o realizado e sugerem uma pausa quando a meta é atingida, sem bloquear jogos. O tempo inclui somente atividades abertas, visíveis e sem pausa; rodadas e peças não contam como atividades completas. O dia segue Brasília. Metas e registros ficam neste navegador, sem sincronização ou soma entre os três dispositivos. Não é necessário executar SQL para essa organização e essas metas.
+
 Há também **24 atividades de quebra-cabeça de quatro peças** e **8 jogos da memória**, com áudio, pausa e recompensas. O atalho de prática guiada foi retirado. Veja [Ativar a biblioteca com 131 atividades](ATIVAR-131-ATIVIDADES.md) para executar a migração dos formatos e importar os novos cards, preservando edições existentes.
 
 Não há leitura obrigatória nos jogos. Não gravamos a voz das crianças e não verificamos a pronúncia ou a repetição. O master pode gravar a pronúncia das figuras no editor. Favoritos e progresso ficam no dispositivo, separados da conta.

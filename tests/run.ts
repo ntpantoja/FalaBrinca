@@ -6,3 +6,5 @@ import "./recorded-audio.test.ts";
 import "./billing-flows.test.ts";
 import "./auth-session.test.ts";
 import "./game-pieces.test.ts";
+
+import "./daily-usage.test.ts";

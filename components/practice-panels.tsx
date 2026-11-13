@@ -391,11 +391,13 @@ export function ParentsPanel({
   progress,
   name,
   role,
+  setProgress,
   onBack,
 }: {
   progress: Progress;
   name: string;
   role: string;
+  setProgress: (update: (p: Progress) => Progress) => void;
   onBack: () => void;
 }) {
   function download() {
@@ -436,6 +438,7 @@ export function ParentsPanel({
           </button>
         }
       />
+      <DailyGoals progress={progress} setProgress={setProgress} />
       <div className="parent-stats">
         {[
           [
@@ -590,5 +593,115 @@ export function SettingsPanel({
         </button>
       </section>
     </>
+  );
+}
+
+function DailyGoals({
+  progress,
+  setProgress,
+}: {
+  progress: Progress;
+  setProgress: (update: (p: Progress) => Progress) => void;
+}) {
+  const [minutes, setMinutes] = useState(
+    String(progress.practice.dailyPlan.minutes ?? ""),
+  );
+  const [activities, setActivities] = useState(
+    String(progress.practice.dailyPlan.activities ?? ""),
+  );
+  const [message, setMessage] = useState("");
+  const day = new Date().toLocaleDateString("en-CA", {
+    timeZone: "America/Sao_Paulo",
+  });
+  const usage = progress.practice.dailyUsage[day] ?? {
+    milliseconds: 0,
+    activities: 0,
+  };
+  const plan = progress.practice.dailyPlan;
+  return (
+    <section className="kids-card weekly-card">
+      <h2>Combinado de hoje</h2>
+      <p>
+        Escolha uma meta de tempo, de atividades, ou as duas. Deixe em branco
+        para não definir uma meta.
+      </p>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          setProgress((p) => ({
+            ...p,
+            practice: {
+              ...p.practice,
+              dailyPlan: {
+                minutes: minutes ? Number(minutes) : null,
+                activities: activities ? Number(activities) : null,
+              },
+            },
+          }));
+          setMessage("Metas diárias salvas neste navegador.");
+        }}
+      >
+        <label>
+          Minutos por dia
+          <input
+            type="number"
+            min="1"
+            max="120"
+            value={minutes}
+            onChange={(e) => setMinutes(e.target.value)}
+          />
+        </label>
+        <label>
+          Atividades por dia
+          <input
+            type="number"
+            min="1"
+            max="100"
+            value={activities}
+            onChange={(e) => setActivities(e.target.value)}
+          />
+        </label>
+        <button className="kids-action purple-action" type="submit">
+          Salvar metas
+        </button>
+      </form>
+      <p role="status">{message}</p>
+      <p>
+        Hoje: {(usage.milliseconds / 60000).toFixed(1).replace(".", ",")}{" "}
+        minutos · {usage.activities} atividades concluídas
+      </p>
+      {plan.minutes !== null && (
+        <label>
+          Tempo: meta de {plan.minutes} minutos
+          <progress
+            aria-label="Meta de tempo"
+            max={plan.minutes * 60000}
+            value={usage.milliseconds}
+          />
+        </label>
+      )}
+      {plan.activities !== null && (
+        <label>
+          Atividades: meta de {plan.activities}
+          <progress
+            aria-label="Meta de atividades"
+            max={plan.activities}
+            value={usage.activities}
+          />
+        </label>
+      )}
+      {((plan.minutes !== null && usage.milliseconds >= plan.minutes * 60000) ||
+        (plan.activities !== null && usage.activities >= plan.activities)) && (
+        <p role="status">
+          ⭐ Combinado alcançado! Que tal uma pausa para brincar fora da tela?
+        </p>
+      )}
+      <small>
+        As metas orientam a rotina e não bloqueiam jogos. O tempo conta enquanto
+        a atividade está aberta e visível, sem pausa. Cada atividade completa
+        conta uma vez por conclusão. Os registros ficam neste navegador e não
+        são somados entre dispositivos. O dia segue o horário de Brasília.
+      </small>
+    </section>
   );
 }

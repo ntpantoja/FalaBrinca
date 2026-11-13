@@ -1,4 +1,10 @@
 "use client";
+import { creditPractice } from "../../lib/daily-usage";
+import {
+  activityGroup,
+  activityGroups,
+  type ActivityGroup,
+} from "../../lib/activity-groups";
 import Link from "next/link";
 import { authenticatedFetch, SessionExpiredError } from "../../lib/session";
 import { unlockActivityAudio } from "../../lib/activity-audio-player";
@@ -17,7 +23,7 @@ import {
 import { Activity } from "../../components/activity";
 import { PuzzleActivity } from "../../components/puzzle-activity";
 import { MemoryActivity } from "../../components/memory-activity";
-import { kindLabels, type ActivityKind } from "../../lib/catalog";
+import { kindLabels } from "../../lib/catalog";
 import { WordPractice } from "../../components/word-practice";
 import {
   KidsHeader,
@@ -74,7 +80,7 @@ export default function Library({
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("Explorador");
-  const [format, setFormat] = useState<"all" | ActivityKind>("all");
+  const [format, setFormat] = useState<ActivityGroup>("learning");
   const [category, setCategory] = useState<Category>("animals");
   const [difficulty, setDifficulty] =
     useState<Adventure["difficulty"]>("beginner");
@@ -129,10 +135,32 @@ export default function Library({
     const t = timing.current;
     if (!t) return;
     const now = performance.now();
-    if (t.since !== null) t.elapsed += now - t.since;
+    if (t.since !== null) {
+      const elapsed = Math.max(0, now - t.since);
+      t.elapsed += elapsed;
+      setProgress((p) => ({
+        ...p,
+        practice: {
+          ...p.practice,
+          dailyUsage: creditPractice(
+            p.practice.dailyUsage,
+            Date.now(),
+            elapsed,
+          ),
+        },
+      }));
+    }
     t.paused = paused;
     t.since = !paused && document.visibilityState === "visible" ? now : null;
   }
+  useEffect(() => {
+    if (!game) return;
+    const timer = setInterval(
+      () => updateTiming(timing.current?.paused ?? false),
+      1000,
+    );
+    return () => clearInterval(timer);
+  }, [game]);
   function finishSession() {
     const t = timing.current;
     if (!t) return;
@@ -245,6 +273,10 @@ export default function Library({
       ...p,
       stars: p.stars + advancedStars,
       completed: { ...p.completed, [a.id]: (p.completed[a.id] || 0) + 1 },
+      practice: {
+        ...p.practice,
+        dailyUsage: creditPractice(p.practice.dailyUsage, Date.now(), 0, true),
+      },
       lastActivity: a.id,
       history: [{ id: a.id, at: new Date().toISOString() }, ...p.history].slice(
         0,
@@ -257,22 +289,17 @@ export default function Library({
   }
   function chooseCategory(value: Category) {
     setCategory(value);
-    if (format !== "all") {
-      setDifficulty(
-        activities.find((a) => a.category === value && a.kind === format)
-          ?.difficulty ?? "beginner",
-      );
-      setView("activities");
-      setMessage("");
-      return;
-    }
     setDifficulty(
       activities.find(
-        (a) => a.category === value && a.difficulty === "beginner",
-      )
-        ? "beginner"
-        : (activities.find((a) => a.category === value)?.difficulty ??
-            "beginner"),
+        (a) =>
+          a.category === value &&
+          activityGroup(a.kind) === format &&
+          a.difficulty === "beginner",
+      )?.difficulty ??
+        activities.find(
+          (a) => a.category === value && activityGroup(a.kind) === format,
+        )?.difficulty ??
+        "beginner",
     );
     setView("activities");
     setMessage("");
@@ -285,7 +312,7 @@ export default function Library({
     (a) =>
       a.category === category &&
       a.difficulty === difficulty &&
-      (format === "all" || a.kind === format),
+      activityGroup(a.kind) === format,
   );
   return (
     <main className={`kids-app ${game ? "kids-playing" : ""}`}>
@@ -387,7 +414,7 @@ export default function Library({
             <button
               className="kids-action purple-action start-practice"
               onClick={() => {
-                setFormat("all");
+                setFormat("learning");
                 navigate("categories");
               }}
             >
@@ -470,7 +497,7 @@ export default function Library({
         <>
           <KidsHeader
             title={`${icons[category]} ${categories[category]}`}
-            subtitle="Escolha uma atividade"
+            subtitle={activityGroups[format]}
             onBack={() => navigate("categories")}
           />
           <div
@@ -493,42 +520,21 @@ export default function Library({
                   aria-pressed={difficulty === value}
                   onClick={() => {
                     setDifficulty(value);
-                    setFormat("all");
                   }}
                 >
                   <span>{"⭐".repeat(i + 1)}</span>
-                  <small>{["Inicial", "Associações", "Histórias"][i]}</small>
+                  <small>
+                    {
+                      (format === "learning"
+                        ? ["Inicial", "Associações", "Histórias"]
+                        : ["Inicial", "Intermediário", "Avançado"])[i]
+                    }
+                  </small>
                 </button>
               ),
             )}
           </div>
-          <div
-            className="activity-formats"
-            role="group"
-            aria-label="Tipo de brincadeira"
-          >
-            {(
-              [
-                "all",
-                ...new Set(
-                  activities
-                    .filter(
-                      (a) =>
-                        a.category === category && a.difficulty === difficulty,
-                    )
-                    .map((a) => a.kind),
-                ),
-              ] as const
-            ).map((value) => (
-              <button
-                key={value}
-                aria-pressed={format === value}
-                onClick={() => setFormat(value)}
-              >
-                {value === "all" ? "Todas" : kindLabels[value]}
-              </button>
-            ))}
-          </div>
+          <p className="muted">{activityGroups[format]}</p>
           <div className="kids-activity-list">
             {filtered.map((a) => (
               <article className="kids-card kids-activity-card" key={a.id}>
@@ -607,6 +613,7 @@ export default function Library({
           progress={progress}
           name={name}
           role={role}
+          setProgress={setProgress}
           onBack={() => navigate("home")}
         />
       ) : (
