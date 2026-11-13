@@ -46,7 +46,9 @@ function choice(v: unknown): v is Choice {
   return (
     text(c.name, 1, 60) &&
     drawing(c.emoji) &&
-    safeMediaUrl(c.image_url) &&
+    (safeMediaUrl(c.image_url) ||
+      (typeof c.image_url === "string" &&
+        /^\/puzzles\/[a-z0-9-]+\.svg$/.test(c.image_url))) &&
     safeMediaUrl(c.audio_url)
   );
 }
@@ -66,11 +68,13 @@ export function validateActivity(input: unknown): ManagedActivity | null {
   )
     return null;
   const kind =
-    a.difficulty === "beginner"
-      ? "figures"
-      : a.difficulty === "intermediate"
-        ? "association"
-        : "sentence";
+    a.kind === "puzzle" || a.kind === "memory"
+      ? a.kind
+      : a.difficulty === "beginner"
+        ? "figures"
+        : a.difficulty === "intermediate"
+          ? "association"
+          : "sentence";
   if (a.kind !== kind) return null;
   if (
     !a.content ||
@@ -114,6 +118,28 @@ export function validateActivity(input: unknown): ManagedActivity | null {
           image_url: c.image_url || undefined,
           audio_url: c.audio_url || undefined,
         })),
+      });
+    } else if (kind === "puzzle") {
+      if (
+        !Array.isArray(r.choices) ||
+        r.choices.length !== 1 ||
+        !choice(r.choices[0]) ||
+        r.answer !== r.choices[0].name
+      )
+        return null;
+      const c = r.choices[0];
+      rounds.push({
+        prompt: r.prompt.trim(),
+        hint: r.hint.trim(),
+        answer: r.answer.trim(),
+        choices: [
+          {
+            name: c.name.trim(),
+            emoji: c.emoji,
+            image_url: c.image_url || undefined,
+            audio_url: c.audio_url || undefined,
+          },
+        ],
       });
     } else {
       if (

@@ -1,3 +1,5 @@
+> Atualização: a prática guiada foi retirada e a biblioteca atual tem 131 atividades. Siga [ATIVAR-131-ATIVIDADES.md](ATIVAR-131-ATIVIDADES.md) para os novos formatos e a importação.
+
 # Atualização: cadastro direto e painel de prática
 
 ## Como ficou o fluxo
@@ -5,7 +7,7 @@
 1. O link principal abre diretamente **Criar conta / Já tenho conta**, com Google e e-mail. Não há página de apresentação antes do cadastro.
 2. Depois da confirmação, o usuário completa o perfil e contrata o plano de **R$ 50,00/mês**, na mesma área de acesso. O pagamento é confirmado no checkout seguro Stripe.
 3. Quando o servidor confirma assinatura ativa, o app abre o painel automaticamente. O parâmetro `checkout=success` sozinho não libera acesso.
-4. O painel apresenta Começar Atividade, Progresso, Pais, Prática Guiada e Configurações, com os cards e as cores inspirados nas referências.
+4. O painel apresenta Começar Atividade, Progresso, Pais, Quebra-cabeças, Jogos de memória e Configurações, com os cards e as cores inspirados nas referências.
 5. A conta master continua dispensada da assinatura e pode abrir o editor de conteúdo.
 
 O cadastro usa rótulos simples, como E-mail, Senha e Seu nome. A autorização para usar o primeiro nome da criança permanece no formulário de perfil, junto das informações de privacidade.
@@ -18,7 +20,7 @@ No Supabase → **Editor SQL → Nova consulta**, copie e execute todo o conteú
 
 Esse arquivo cria a biblioteca caso ela ainda não exista, mantém os registros existentes e amplia as categorias para **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. Não muda contas, pagamentos ou o preço da mensalidade. Reclassifica somente os cards iniciais que nunca foram editados; cards editados pelo proprietário são preservados.
 
-Depois da publicação na Vercel, entre com sua conta master em `/admin` e clique em **Importar atividades iniciais** para adicionar os novos cards de cores, ações e sentimentos. Os registros existentes não são sobrescritos. O material inicial agora tem **27 atividades e 81 rodadas**. Se você ainda não vinculou a conta master, siga `ATIVAR-ACESSO-MASTER.md` usando seu ID de usuário existente.
+Depois da publicação na Vercel, entre com sua conta master em `/admin`, abra **Gestão de conteúdo** e clique em **Importar biblioteca (131)** para adicionar os novos cards de cores, ações e sentimentos. Os registros existentes não são sobrescritos. O material inicial agora tem **131 atividades e 393 rodadas**, após a migração descrita no guia de expansão. Se você ainda não vinculou a conta master, siga `ATIVAR-ACESSO-MASTER.md` usando seu ID de usuário existente.
 
 Nenhuma nova chave Stripe ou Google é necessária nesta atualização. As configurações já existentes continuam sendo usadas.
 
@@ -32,7 +34,7 @@ Nenhuma nova chave Stripe ou Google é necessária nesta atualização. As confi
 - Se uma imagem enviada ao editor não carregar, aparece o desenho/emoji alternativo.
 - A legenda escrita é opcional em Configurações e fica desligada por padrão; a criança não precisa ler.
 
-As atividades de associações e histórias visuais continuam disponíveis nos demais níveis. A Prática Guiada organiza uma sequência curta de até três atividades iniciais de animais, alimentos e objetos; não é terapia.
+As atividades de associações e histórias visuais continuam disponíveis nos demais níveis. A prática guiada foi retirada. As novas brincadeiras estão nos atalhos de quebra-cabeça e memória.
 
 ## Progresso e relatórios
 

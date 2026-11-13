@@ -1,4 +1,6 @@
-export type ActivityKind = "figures" | "association" | "sentence";
+import { expandedCatalog } from "./expanded-catalog";
+export type ActivityKind =
+  "figures" | "association" | "sentence" | "puzzle" | "memory";
 export type Adventure = {
   id: string;
   title: string;
@@ -238,7 +240,10 @@ catalog.push({
   difficulty: "beginner",
   minutes: 3,
 });
+catalog.push(...expandedCatalog);
 export const kindLabels: Record<ActivityKind, string> = {
+  puzzle: "Quebra-cabeças",
+  memory: "Jogo da memória",
   figures: "Identificar figuras",
   association: "Fazer associações",
   sentence: "Contar histórias em imagens",

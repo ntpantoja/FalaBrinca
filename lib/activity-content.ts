@@ -1,4 +1,5 @@
 import "server-only";
+import { expandedContent } from "./expanded-content";
 import { freeContent } from "./free-content";
 import type { ActivityContent, Choice, Round } from "./catalog";
 function figures(
@@ -298,5 +299,6 @@ const extra: ActivityContent[] = [
 ];
 export const allContent: Record<string, ActivityContent> = {
   ...freeContent,
+  ...expandedContent,
   ...Object.fromEntries(extra.map((a) => [a.id, a])),
 };

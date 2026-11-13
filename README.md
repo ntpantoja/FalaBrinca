@@ -12,11 +12,13 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 - `/admin/clientes`: endereço antigo mantido como alias do dashboard.
 - `/dispositivos`: lista e desconexão dos até três dispositivos por conta.
 
-As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. O material de importação inclui 27 atividades e 81 rodadas. Dificuldades:
+As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes, Ações e Natureza**. O material de importação inclui 131 atividades e 393 rodadas. Dificuldades:
 
 1. **Inicial**: a figura de referência permanece visível acima de três opções na mesma tela. O áudio diz a palavra e convida à repetição; a criança toca no desenho igual. Um erro permite tentar novamente, e o acerto libera a próxima palavra. Não é preciso apertar outro botão para mostrar as opções.
 2. **Intermediário**: associações de imagens com instruções faladas.
 3. **Avançado**: organização de histórias em imagens.
+
+Há também **24 atividades de quebra-cabeça de quatro peças** e **8 jogos da memória**, com áudio, pausa e recompensas. O atalho de prática guiada foi retirado. Veja [Ativar a biblioteca com 131 atividades](ATIVAR-131-ATIVIDADES.md) para executar a migração dos formatos e importar os novos cards, preservando edições existentes.
 
 Não há leitura obrigatória nos jogos. Não gravamos a voz das crianças e não verificamos a pronúncia ou a repetição. O master pode gravar a pronúncia das figuras no editor. Favoritos e progresso ficam no dispositivo, separados da conta.
 
@@ -59,7 +61,7 @@ npm run test:auth-ui
 
 `test:e2e` verifica entrada direta no cadastro, plano e ausência de demonstração, autenticação obrigatória, proteção do painel, webhook e exclusão das páginas privadas do cache. Precisa de build sem configuração Supabase pública.
 
-`test:auth-ui` faz um build com serviço Supabase local **simulado**, testa confirmação, Google, os 27 jogos e permissões/CRUD do master. Não usa um banco Supabase real nem cobra cartões. O provedor em `tests/mock-supabase.mjs` é uma fixture de teste e nunca deve ser usado como backend real. Depois dessa suíte, execute `npm run build` com as configurações corretas para remover o build fictício. Em ambientes com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
+`test:auth-ui` faz um build com serviço Supabase local **simulado**, testa confirmação, Google, as 131 atividades e permissões/CRUD do master. Não usa um banco Supabase real nem cobra cartões. O provedor em `tests/mock-supabase.mjs` é uma fixture de teste e nunca deve ser usado como backend real. Depois dessa suíte, execute `npm run build` com as configurações corretas para remover o build fictício. Em ambientes com Chromium já instalado, defina `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`.
 
 Os testes de permissão verificam que metadados `role: master` no usuário comum não concedem acesso administrativo; o ID configurado e o usuário verificado no servidor são a autoridade. Os testes de edição incluem conflitos de versão e exclusão. Os painéis têm testes de fluxo de pagamento, dados de seleção, metas, persistência, exportação e configurações. Validações de conteúdo cobrem categorias, níveis, respostas e imagens.
 

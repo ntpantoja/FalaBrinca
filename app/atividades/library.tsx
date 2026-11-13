@@ -12,10 +12,12 @@ import {
   ArrowRight,
   Heart,
   ShieldCheck,
-  Sparkles,
   Check,
 } from "lucide-react";
 import { Activity } from "../../components/activity";
+import { PuzzleActivity } from "../../components/puzzle-activity";
+import { MemoryActivity } from "../../components/memory-activity";
+import { kindLabels, type ActivityKind } from "../../lib/catalog";
 import { WordPractice } from "../../components/word-practice";
 import {
   KidsHeader,
@@ -72,6 +74,7 @@ export default function Library({
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("Explorador");
+  const [format, setFormat] = useState<"all" | ActivityKind>("all");
   const [category, setCategory] = useState<Category>("animals");
   const [difficulty, setDifficulty] =
     useState<Adventure["difficulty"]>("beginner");
@@ -85,7 +88,6 @@ export default function Library({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const timing = useRef<Timing | null>(null);
-  const queue = useRef<Adventure[]>([]);
   const gained = useRef(0);
   useEffect(() => {
     setProgress(readProgress());
@@ -152,7 +154,6 @@ export default function Library({
   }
   function navigate(next: typeof view) {
     finishSession();
-    queue.current = [];
     if ("speechSynthesis" in window) window.speechSynthesis.cancel();
     setGame(null);
     setReward(null);
@@ -256,6 +257,15 @@ export default function Library({
   }
   function chooseCategory(value: Category) {
     setCategory(value);
+    if (format !== "all") {
+      setDifficulty(
+        activities.find((a) => a.category === value && a.kind === format)
+          ?.difficulty ?? "beginner",
+      );
+      setView("activities");
+      setMessage("");
+      return;
+    }
     setDifficulty(
       activities.find(
         (a) => a.category === value && a.difficulty === "beginner",
@@ -267,37 +277,33 @@ export default function Library({
     setView("activities");
     setMessage("");
   }
-  async function guided() {
-    const selected: Adventure[] = [];
-    for (const c of ["animals", "foods", "objects"] as Category[]) {
-      const a = activities.find(
-        (item) => item.category === c && item.difficulty === "beginner",
-      );
-      if (a) selected.push(a);
-    }
-    if (!selected.length) {
-      setMessage(
-        "A biblioteca ainda precisa de atividades iniciais publicadas.",
-      );
-      return;
-    }
-    queue.current = selected.slice(1);
-    await start(selected[0]);
-  }
+  const NewGame =
+    game?.adventure.kind === "memory" ? MemoryActivity : PuzzleActivity;
   const level = Math.floor(progress.stars / 10) + 1;
   const levelPercent = (progress.stars % 10) * 10;
   const filtered = activities.filter(
-    (a) => a.category === category && a.difficulty === difficulty,
+    (a) =>
+      a.category === category &&
+      a.difficulty === difficulty &&
+      (format === "all" || a.kind === format),
   );
-  const onNextGuided = async () => {
-    const next = queue.current.shift();
-    if (next) await start(next);
-    else navigate("home");
-  };
   return (
     <main className={`kids-app ${game ? "kids-playing" : ""}`}>
       {game ? (
-        game.adventure.kind === "figures" ? (
+        game.adventure.kind === "puzzle" || game.adventure.kind === "memory" ? (
+          <NewGame
+            key={game.adventure.id}
+            adventure={game.adventure}
+            content={game.content}
+            sound={progress.sound}
+            voiceSettings={progress.practice}
+            onExit={() => navigate("activities")}
+            onAttempt={attempt}
+            onWord={practiced}
+            onComplete={() => complete()}
+            onPause={updateTiming}
+          />
+        ) : game.adventure.kind === "figures" ? (
           <WordPractice
             key={game.adventure.id}
             adventure={game.adventure}
@@ -333,10 +339,10 @@ export default function Library({
           <strong className="reward-stars">⭐ +{reward.stars}</strong>
           <button
             className="kids-action purple-action"
-            onClick={() => void onNextGuided()}
+            onClick={() => navigate("home")}
           >
             <Play size={22} />
-            {queue.current.length ? "Próxima descoberta" : "Voltar ao início"}
+            Voltar ao início
           </button>
           <button
             className="kids-action outlined-action"
@@ -380,7 +386,10 @@ export default function Library({
           <div className="home-actions">
             <button
               className="kids-action purple-action start-practice"
-              onClick={() => navigate("categories")}
+              onClick={() => {
+                setFormat("all");
+                navigate("categories");
+              }}
             >
               <Play size={25} />
               Começar Atividade
@@ -403,12 +412,21 @@ export default function Library({
             </div>
             <button
               className="kids-action gold-action"
-              disabled={busy}
-              onClick={() => void guided()}
+              onClick={() => {
+                setFormat("puzzle");
+                navigate("categories");
+              }}
             >
-              <Play size={23} />
-              {busy ? "Preparando…" : "Prática Guiada"}
-              <Sparkles size={20} />
+              <span aria-hidden="true">🧩</span>Quebra-cabeças
+            </button>
+            <button
+              className="kids-action teal-action"
+              onClick={() => {
+                setFormat("memory");
+                navigate("categories");
+              }}
+            >
+              <span aria-hidden="true">🃏</span>Jogos de memória
             </button>
             <button
               className="kids-action outlined-action"
@@ -473,13 +491,43 @@ export default function Library({
                   }
                   className={difficulty === value ? "selected" : ""}
                   aria-pressed={difficulty === value}
-                  onClick={() => setDifficulty(value)}
+                  onClick={() => {
+                    setDifficulty(value);
+                    setFormat("all");
+                  }}
                 >
                   <span>{"⭐".repeat(i + 1)}</span>
                   <small>{["Inicial", "Associações", "Histórias"][i]}</small>
                 </button>
               ),
             )}
+          </div>
+          <div
+            className="activity-formats"
+            role="group"
+            aria-label="Tipo de brincadeira"
+          >
+            {(
+              [
+                "all",
+                ...new Set(
+                  activities
+                    .filter(
+                      (a) =>
+                        a.category === category && a.difficulty === difficulty,
+                    )
+                    .map((a) => a.kind),
+                ),
+              ] as const
+            ).map((value) => (
+              <button
+                key={value}
+                aria-pressed={format === value}
+                onClick={() => setFormat(value)}
+              >
+                {value === "all" ? "Todas" : kindLabels[value]}
+              </button>
+            ))}
           </div>
           <div className="kids-activity-list">
             {filtered.map((a) => (
@@ -493,6 +541,7 @@ export default function Library({
                   <span aria-hidden="true">{a.emoji}</span>
                   <div>
                     <h2>{a.title}</h2>
+                    <small>{kindLabels[a.kind]}</small>
                     <small>
                       {progress.completed[a.id]
                         ? "✓ Já explorada"

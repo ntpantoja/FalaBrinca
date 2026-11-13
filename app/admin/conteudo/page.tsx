@@ -9,8 +9,16 @@ import {
   type ManagedActivity,
   type Difficulty,
 } from "../../../lib/content-validation";
-import { type Choice, type Round } from "../../../lib/catalog";
+import {
+  kindLabels,
+  catalog,
+  type ActivityKind,
+  type Choice,
+  type Round,
+} from "../../../lib/catalog";
 import { AudioRecorder } from "../../../components/audio-recorder";
+import { PuzzleActivity } from "../../../components/puzzle-activity";
+import { MemoryActivity } from "../../../components/memory-activity";
 import { Activity } from "../../../components/activity";
 const blankRound = (): Round => ({
   prompt: "Ouça e repita a palavra. Depois selecione a figura.",
@@ -113,6 +121,10 @@ export default function Admin() {
   }
   function changeLevel(value: Difficulty) {
     if (!editor) return;
+    if (editor.kind === "puzzle" || editor.kind === "memory") {
+      setEditor({ ...editor, difficulty: value });
+      return;
+    }
     if (
       !window.confirm(
         "Mudar o tipo de atividade recria as rodadas do editor. Continuar?",
@@ -143,6 +155,41 @@ export default function Admin() {
       ...editor,
       difficulty: value,
       kind,
+      content: { id: editor.id, rounds: [round] },
+    });
+  }
+  function changeFormat(value: ActivityKind) {
+    if (!editor || value === editor.kind) return;
+    if (!confirm("Mudar o formato recria as rodadas. Continuar?")) return;
+    const difficulty =
+      value === "sentence"
+        ? "advanced"
+        : value === "association" || value === "memory"
+          ? "intermediate"
+          : "beginner";
+    const round: Round =
+      value === "sentence"
+        ? {
+            prompt: "Vamos contar uma história?",
+            hint: "Observe e converse com a criança.",
+            answer: "O gato quer a bola.",
+            choices: [],
+            sequence: [
+              { name: "GATO", emoji: "🐱" },
+              { name: "QUER", emoji: "🤲" },
+              { name: "BOLA", emoji: "⚽" },
+            ],
+          }
+        : blankRound();
+    if (value === "puzzle") {
+      round.choices = round.choices.slice(0, 1);
+      round.prompt = "Vamos montar a figura?";
+      round.hint = "Arraste as quatro peças, ou toque na peça e no espaço.";
+    }
+    setEditor({
+      ...editor,
+      kind: value,
+      difficulty,
       content: { id: editor.id, rounds: [round] },
     });
   }
@@ -245,6 +292,12 @@ export default function Admin() {
     }
     setPreview(valid);
   }
+  const PreviewGame =
+    preview?.kind === "puzzle"
+      ? PuzzleActivity
+      : preview?.kind === "memory"
+        ? MemoryActivity
+        : Activity;
   return (
     <>
       <header className="family-header">
@@ -351,6 +404,21 @@ export default function Admin() {
                 </select>
               </label>
               <label>
+                Formato da atividade
+                <select
+                  aria-label="Formato da atividade"
+                  value={editor.kind}
+                  disabled={busy || uploading}
+                  onChange={(e) => changeFormat(e.target.value as ActivityKind)}
+                >
+                  {Object.entries(kindLabels).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
                 Dificuldade
                 <select
                   disabled={uploading || busy}
@@ -410,11 +478,15 @@ export default function Admin() {
             </div>
             <div className="notice">
               <p>
-                {editor.kind === "figures"
-                  ? "Nível inicial: o app mostra a figura, fala a palavra, convida a criança a repetir e depois libera a seleção. A repetição é incentivada, não avaliada."
-                  : editor.kind === "association"
-                    ? "Escreva a pergunta falada, escolha uma pista visual e marque a resposta correta."
-                    : "Escreva a frase que será narrada e escolha as figuras da sequência. As palavras não aparecem para a criança."}
+                {editor.kind === "puzzle"
+                  ? "Quebra-cabeça de quatro peças: escolha uma figura por rodada. A imagem é dividida automaticamente; também pode usar uma ilustração própria e gravar sua pronúncia."
+                  : editor.kind === "memory"
+                    ? "Jogo da memória: escolha três figuras diferentes por rodada. O app cria os pares automaticamente."
+                    : editor.kind === "figures"
+                      ? "Nível inicial: o app mostra a figura, fala a palavra, convida a criança a repetir e depois libera a seleção. A repetição é incentivada, não avaliada."
+                      : editor.kind === "association"
+                        ? "Escreva a pergunta falada, escolha uma pista visual e marque a resposta correta."
+                        : "Escreva a frase que será narrada e escolha as figuras da sequência. As palavras não aparecem para a criança."}
               </p>
             </div>
             {editor.content.rounds.map((round, index) => (
@@ -548,7 +620,8 @@ export default function Admin() {
                           return data.url;
                         }}
                       />
-                      {editor.kind !== "sentence" && (
+                      {(editor.kind === "figures" ||
+                        editor.kind === "association") && (
                         <label className="checkbox">
                           <input
                             type="radio"
@@ -648,7 +721,7 @@ export default function Admin() {
                 disabled={busy}
                 onClick={() => void seed()}
               >
-                Importar atividades iniciais
+                Importar biblioteca ({catalog.length})
               </button>
             </div>
             <div className="admin-summary">
@@ -718,8 +791,12 @@ export default function Admin() {
             <button className="secondary" onClick={() => setPreview(null)}>
               Fechar prévia
             </button>
-            <Activity
+            <PreviewGame
               key={preview.id}
+              voiceSettings={{ volume: 1, rate: 0.8 }}
+              onWord={() => {}}
+              onAttempt={() => {}}
+              onPause={() => {}}
               adventure={preview}
               content={preview.content}
               sound={true}

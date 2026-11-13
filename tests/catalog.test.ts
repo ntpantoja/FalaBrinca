@@ -4,10 +4,10 @@ import { catalog } from "../lib/catalog";
 import { allContent } from "../lib/activity-content";
 import { sequencePictures } from "../lib/pictures";
 import { parseProfile } from "../lib/profile";
-test("27 atividades distintas e 81 rodadas completas, por categoria e dificuldade", () => {
-  assert.equal(catalog.length, 27);
-  assert.equal(new Set(catalog.map((a) => a.id)).size, 27);
-  assert.equal(catalog.filter((a) => a.difficulty === "beginner").length, 11);
+test("131 atividades distintas e 393 rodadas completas, por categoria e dificuldade", () => {
+  assert.equal(catalog.length, 131);
+  assert.equal(new Set(catalog.map((a) => a.id)).size, 131);
+  assert.equal(catalog.filter((a) => a.difficulty === "beginner").length, 107);
   for (const category of [
     "animals",
     "objects",
@@ -39,7 +39,7 @@ test("27 atividades distintas e 81 rodadas completas, por categoria e dificuldad
     );
   assert.equal(
     catalog.reduce((n, a) => n + allContent[a.id].rounds.length, 0),
-    81,
+    393,
   );
   for (const activity of catalog) {
     const content = allContent[activity.id];
@@ -61,6 +61,10 @@ test("27 atividades distintas e 81 rodadas completas, por categoria e dificuldad
           ),
           false,
         );
+      } else if (activity.kind === "puzzle") {
+        assert.equal(round.choices.length, 1);
+        assert.equal(round.choices[0].name, round.answer);
+        assert.ok(round.choices[0].image_url?.startsWith("/puzzles/"));
       } else {
         assert.equal(round.choices.length, 3);
         assert.equal(

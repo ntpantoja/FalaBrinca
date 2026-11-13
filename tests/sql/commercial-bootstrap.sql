@@ -11,3 +11,6 @@ insert into auth.users(id,email,last_sign_in_at) values
 ('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','owner@example.test',now()),
 ('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','family@example.test',now()),
 ('cccccccc-cccc-4ccc-8ccc-cccccccccccc','another@example.test',now());
+
+create table public.learning_activities(id text primary key,kind text check(kind in ('figures','association','sentence')),content jsonb);
+insert into public.learning_activities values('preserve-recording','figures','{"audio_url":"https://example.test/custom.webm"}');

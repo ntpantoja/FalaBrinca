@@ -36,7 +36,7 @@ Não use prefixo `NEXT_PUBLIC_`. A permissão é conferida no servidor, nunca em
 3. Sua conta abre automaticamente o dashboard master após entrar. Abra **Gestão de conteúdo** para editar a biblioteca. Você também pode abrir `https://falabrinca-43kf.vercel.app/admin`.
 4. Clique em **Importar atividades iniciais** e confirme.
 
-A importação cria 27 atividades com 81 rodadas. Não sobrescreve atividades que já existem com o mesmo identificador. Se você apagar uma atividade inicial e clicar em importar novamente, ela será recriada; a confirmação informa isso. Nada é reimportado automaticamente ao iniciar o aplicativo.
+A importação atual oferece 131 atividades com 393 rodadas. Execute também `supabase/playful-activities-migration.sql` para permitir os novos formatos, conforme `ATIVAR-131-ATIVIDADES.md`. Não sobrescreve atividades que já existem com o mesmo identificador. Se você apagar uma atividade inicial e clicar em importar novamente, ela será recriada; a confirmação informa isso. Nada é reimportado automaticamente ao iniciar o aplicativo.
 
 Sua conta master pode acessar e testar a biblioteca sem contratar assinatura. **Isso não concede acesso gratuito aos outros usuários.** Todas as atividades, inclusive as antigas demonstrações, agora exigem assinatura ativa dos usuários comuns.
 

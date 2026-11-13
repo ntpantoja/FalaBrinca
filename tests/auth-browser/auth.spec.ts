@@ -267,11 +267,17 @@ for (const activity of catalog)
       .click();
     await page
       .locator(
-        activity.kind === "figures" ? ".word-hero-card" : ".picture-prompt",
+        activity.kind === "figures"
+          ? ".word-hero-card"
+          : activity.kind === "puzzle"
+            ? ".puzzle-board"
+            : activity.kind === "memory"
+              ? ".memory-grid"
+              : ".picture-prompt",
       )
       .waitFor();
     for (const [index, round] of content[activity.id].rounds.entries()) {
-      if (activity.difficulty === "beginner") {
+      if (activity.kind === "figures") {
         await expect(
           page.getByRole("img", {
             name: `Figura para imitar: ${round.answer}`,
@@ -285,11 +291,26 @@ for (const activity of catalog)
           round.choices.length,
         );
       }
-      const answers = round.words
-        ? sequencePictures(round.words).map((piece) => piece.name.split(":")[1])
-        : [round.answer];
-      for (const name of answers)
-        await page.getByRole("button", { name, exact: true }).click();
+      if (activity.kind === "puzzle") {
+        for (let piece = 0; piece < 4; piece++) {
+          await page.locator(`[data-piece="${piece}"]`).click();
+          await page.locator(`[data-puzzle-slot="${piece}"]`).click();
+        }
+      } else if (activity.kind === "memory") {
+        for (let pair = 0; pair < 3; pair++) {
+          const cards = page.locator(`[data-memory-pair="${pair}"]`);
+          await cards.nth(0).click();
+          await cards.nth(1).click();
+        }
+      } else {
+        const answers = round.words
+          ? sequencePictures(round.words).map(
+              (piece) => piece.name.split(":")[1],
+            )
+          : [round.answer];
+        for (const name of answers)
+          await page.getByRole("button", { name, exact: true }).click();
+      }
       await page
         .getByRole("button", {
           name:
@@ -301,7 +322,9 @@ for (const activity of catalog)
         })
         .click();
     }
-    await expect(page.locator(".reward-stars")).toContainText("+3");
+    await expect(page.locator(".reward-stars")).toContainText(
+      activity.kind === "memory" ? "+9" : "+3",
+    );
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= innerWidth,
@@ -1242,4 +1265,132 @@ test("queda temporária mantém a sessão e permite tentar novamente sem entrar 
   await expect(
     page.getByRole("button", { name: "Começar Atividade", exact: true }),
   ).toBeVisible();
+});
+
+test("quebra-cabeça funciona por arraste real de toque, aceita tentativas e forma quatro peças", async ({
+  page,
+}) => {
+  await paidApp(page);
+  await page.goto("/atividades");
+  await expect(page.getByRole("button", { name: /Guiada/ })).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Quebra-cabeças", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Animais", exact: true }).click();
+  const activity = catalog.find(
+    (a) => a.kind === "puzzle" && a.category === "animals",
+  )!;
+  await page
+    .getByRole("button", { name: `Jogar ${activity.title}`, exact: true })
+    .click();
+  await expect(page.locator(".puzzle-board")).toBeVisible();
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setTouchEmulationEnabled", {
+    enabled: true,
+    maxTouchPoints: 1,
+  });
+  async function drag(piece: number, slot: number) {
+    const source = page.locator(`[data-piece="${piece}"]`);
+    await source.scrollIntoViewIfNeeded();
+    const from = (await source.boundingBox())!;
+    const to = (await page
+      .locator(`[data-puzzle-slot="${slot}"]`)
+      .boundingBox())!;
+    const sx = from.x + from.width / 2,
+      sy = from.y + from.height / 2,
+      tx = to.x + to.width / 2,
+      ty = to.y + to.height / 2;
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: sx, y: sy }],
+    });
+    for (let step = 1; step <= 8; step++)
+      await cdp.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: [
+          { x: sx + ((tx - sx) * step) / 8, y: sy + ((ty - sy) * step) / 8 },
+        ],
+      });
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+  }
+  await drag(0, 1);
+  await expect(page.locator(".puzzle-cell.filled")).toHaveCount(0);
+  await expect(
+    page.getByRole("button", { name: "Próxima descoberta", exact: true }),
+  ).toBeDisabled();
+  for (let piece = 0; piece < 4; piece++) {
+    await drag(piece, piece);
+    await expect(page.locator(".puzzle-cell.filled")).toHaveCount(piece + 1);
+  }
+  await page.screenshot({
+    path: "/tmp/falabrinca-quebra-cabeca.png",
+    fullPage: true,
+  });
+  await expect(page.locator(".puzzle-board")).toHaveClass(/completed/);
+  await cdp.detach();
+  await page
+    .getByRole("button", { name: "Próxima descoberta", exact: true })
+    .click();
+  await expect(page.locator(".puzzle-cell.filled")).toHaveCount(0);
+});
+test("memória esconde pares diferentes e mantém os pares encontrados, sem leitura", async ({
+  page,
+}) => {
+  await paidApp(page);
+  await page.goto("/atividades");
+  await page
+    .getByRole("button", { name: "Jogos de memória", exact: true })
+    .click();
+  await page.getByRole("button", { name: "Alimentos", exact: true }).click();
+  const activity = catalog.find(
+    (a) => a.kind === "memory" && a.category === "foods",
+  )!;
+  await page
+    .getByRole("button", { name: `Jogar ${activity.title}`, exact: true })
+    .click();
+  await expect(page.locator(".memory-card")).toHaveCount(6);
+  await page.locator('[data-memory-pair="0"]').nth(0).click();
+  await page.locator('[data-memory-pair="1"]').nth(0).click();
+  await expect(page.locator(".memory-card.open")).toHaveCount(2);
+  await expect(page.locator(".memory-card.matched")).toHaveCount(0);
+  await expect(page.locator(".memory-card.open")).toHaveCount(0, {
+    timeout: 5000,
+  });
+  await page.locator('[data-memory-pair="0"]').nth(0).click();
+  await page.locator('[data-memory-pair="0"]').nth(1).click();
+  await expect(page.locator(".memory-card.matched")).toHaveCount(2);
+  await page.screenshot({
+    path: "/tmp/falabrinca-memoria.png",
+    fullPage: true,
+  });
+});
+test("master cria quebra-cabeça e memória pelo editor e abre a prévia correta", async ({
+  page,
+}) => {
+  await masterBrowser(page);
+  await page.goto("/admin/conteudo");
+  await page
+    .getByRole("button", { name: "+ Nova atividade", exact: true })
+    .click();
+  await page.getByLabel("Título do card").fill("Quebra-cabeça do gato");
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByLabel("Formato da atividade", { exact: true })
+    .selectOption("puzzle");
+  await expect(page.locator(".choice-editor")).toHaveCount(1);
+  await page.getByRole("button", { name: "Ver prévia", exact: true }).click();
+  await expect(page.locator(".admin-preview .puzzle-board")).toBeVisible();
+  await page
+    .getByRole("button", { name: "Fechar prévia", exact: true })
+    .click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByLabel("Formato da atividade", { exact: true })
+    .selectOption("memory");
+  await expect(page.locator(".choice-editor")).toHaveCount(3);
+  await page.getByRole("button", { name: "Ver prévia", exact: true }).click();
+  await expect(page.locator(".admin-preview .memory-grid")).toBeVisible();
 });

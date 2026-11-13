@@ -68,6 +68,17 @@ try {
   );
   sql(migration);
   sql(migration);
+  const playful = readFileSync(
+    "supabase/playful-activities-migration.sql",
+    "utf8",
+  );
+  sql(playful);
+  sql(playful);
+  sql(`insert into learning_activities values('new-puzzle','puzzle','{}'),('new-memory','memory','{}');
+    do $$ begin
+      if (select content->>'audio_url' from learning_activities where id='preserve-recording') <> 'https://example.test/custom.webm' then raise exception 'existing recording changed'; end if;
+      begin insert into learning_activities values('invalid','unknown','{}'); raise exception 'invalid kind accepted'; exception when check_violation then null; end;
+    end; $$;`);
   sql(readFileSync("tests/sql/commercial-assertions.sql", "utf8"));
   const register = (id) =>
     execute(

@@ -888,7 +888,7 @@ export default function AccountPage() {
             <li>Atividades visuais com áudio e repetição.</li>
             <li>Oito categorias para explorar.</li>
             <li>Progresso, metas e recompensas.</li>
-            <li>Painel dos pais e prática guiada.</li>
+            <li>Painel dos pais, quebra-cabeças e memória.</li>
           </ul>
           <p>
             Até três dispositivos cadastrados por conta. Nos planos recorrentes,
