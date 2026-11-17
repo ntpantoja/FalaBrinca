@@ -10,10 +10,38 @@ export function configuredPriceIds() {
     ]),
   ) as Record<PlanId, string | undefined>;
 }
+export function recurringPriceIds() {
+  const current = configuredPriceIds();
+  const ids = (value: string | undefined) =>
+    (value ?? "")
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean);
+  return {
+    monthly: [
+      ...new Set(
+        [
+          current.monthly,
+          ...ids(process.env.STRIPE_LEGACY_MONTHLY_PRICE_IDS),
+        ].filter((id): id is string => !!id),
+      ),
+    ],
+    annual: [
+      ...new Set(
+        [
+          current.annual,
+          ...ids(process.env.STRIPE_LEGACY_ANNUAL_PRICE_IDS),
+        ].filter((id): id is string => !!id),
+      ),
+    ],
+  };
+}
 export function planForPrice(id?: string | null): PlanId | undefined {
-  return Object.entries(configuredPriceIds()).find(
-    ([, value]) => value && value === id,
-  )?.[0] as PlanId | undefined;
+  if (!id) return undefined;
+  const prices = recurringPriceIds();
+  if (prices.monthly.includes(id)) return "monthly";
+  if (prices.annual.includes(id)) return "annual";
+  return configuredPriceIds().yearly_pass === id ? "yearly_pass" : undefined;
 }
 export async function planPrice(stripe: Stripe, id: PlanId) {
   const priceId = configuredPriceIds()[id];
@@ -35,10 +63,10 @@ export async function monthlyPrice(stripe: Stripe) {
 }
 export async function subscriptionFor(stripe: Stripe, customer: string) {
   const current: Stripe.Subscription[] = [];
-  const prices = configuredPriceIds();
+  const prices = recurringPriceIds();
   const eligiblePrices = [
-    prices.monthly,
-    prices.annual,
+    ...prices.monthly,
+    ...prices.annual,
     process.env.STRIPE_TEST_PRICE_ID?.trim(),
   ].filter(Boolean);
   for await (const s of stripe.subscriptions.list({

@@ -108,13 +108,13 @@ with customers as (
  s.status as subscription_status,s.price_id,s.period_end,s.cancel_at_period_end,
  a.ends_at as pass_end,
  case when a.ends_at>now() then 'yearly_pass'
-  when s.status in ('active','trialing') and to_timestamp(s.period_end)>now() then case when s.price_id=p_annual then 'annual' else 'monthly' end
+  when s.status in ('active','trialing') and to_timestamp(s.period_end)>now() then case when s.price_id=any(string_to_array(p_annual,',')) then 'annual' else 'monthly' end
   else null end as plan,
  exists(select 1 from payment_receipts r where r.user_id=u.id) as purchase_recorded
  from auth.users u
  left join family_profiles f on f.user_id=u.id
  left join account_visits v on v.user_id=u.id
- left join lateral(select * from subscriptions s where s.user_id=u.id and s.price_id in (p_monthly,p_annual)
+ left join lateral(select * from subscriptions s where s.user_id=u.id and s.price_id=any(string_to_array(p_monthly||','||p_annual,','))
   order by (s.status in ('active','trialing')) desc,s.period_end desc nulls last,s.event_created desc limit 1) s on true
  left join lateral(select ends_at from access_passes a where a.user_id=u.id and not a.revoked and a.ends_at>now() order by ends_at desc limit 1) a on true
  where u.id<>p_master
@@ -148,7 +148,7 @@ select jsonb_build_object(
  'monthly',(select count(*) from classified where plan='monthly' and subscription_status='active'),
  'annual',(select count(*) from classified where plan='annual' and subscription_status='active'),
  'yearlyPass',(select count(*) from classified where plan='yearly_pass'),
- 'mrrCents',(select coalesce(sum(case when plan='monthly' and subscription_status='active' then 5000 when plan='annual' and subscription_status='active' then 3750 else 0 end),0) from classified),
+ 'mrrCents',(select coalesce(sum(case when plan='monthly' and subscription_status='active' then case when price_id=split_part(p_monthly,',',1) then 2000 else 5000 end when plan='annual' and subscription_status='active' then case when price_id=split_part(p_annual,',',1) then 20000.0/12 else 45000.0/12 end else 0 end),0) from classified),
  'passMonthlyEquivalentCents',(select count(*)*50000.0/12 from classified where plan='yearly_pass'),
  'grossCents',(select gross from receipt_totals),'refundedCents',(select refunded from receipt_totals),
  'netBeforeFeesCents',(select gross-refunded from receipt_totals),

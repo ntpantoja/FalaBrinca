@@ -86,4 +86,4 @@ O app **não grava voz, não confirma se houve repetição e não avalia pronún
 - Com assinante: abrir `/atividades`, escolher categoria e dificuldade, concluir a etapa de ouvir/repetir e depois selecionar.
 - Verificar o cancelamento no portal Stripe e a expiração do acesso após o período pago.
 
-O preço permanece **R$ 50,00 por mês**. Não é necessário recriar o preço no Stripe para esta atualização.
+Os planos atuais são **R$ 20,00 por mês** e **R$ 200,00 por ano**. Se ainda usa os valores anteriores, siga [Atualizar preços e painel comercial](ATIVAR-PLANOS-E-PAINEL-COMERCIAL.md) antes de liberar novas compras.

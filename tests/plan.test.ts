@@ -3,16 +3,17 @@ import assert from "node:assert/strict";
 import { matchesPlan, hasAccess } from "../lib/plan.ts";
 const price = {
   active: true,
-  unit_amount: 5000,
+  unit_amount: 2000,
   currency: "brl",
   type: "recurring",
   recurring: { interval: "month", interval_count: 1 },
 };
-test("só aceita preço ativo de R$ 50 por mês em BRL", () => {
+test("só aceita preço ativo de R$ 20 por mês em BRL", () => {
   assert.equal(matchesPlan(price), true);
   for (const override of [
     { active: false },
     { unit_amount: 500 },
+    { unit_amount: 5000 },
     { currency: "usd" },
     { type: "one_time" },
     { recurring: { interval: "year", interval_count: 1 } },
@@ -53,11 +54,11 @@ test("acesso exige assinatura ativa ou teste e o preço correto", () => {
 import { PLANS, isPlanId, passEnd } from "../lib/plan.ts";
 import { estimateSales } from "../lib/commercial.ts";
 test("preços mensal/anual e passe legado exigem tipo e intervalo corretos", () => {
-  assert.equal(PLANS.annual.amount, 45000);
+  assert.equal(PLANS.annual.amount, 20000);
   assert.equal(PLANS.yearly_pass.amount, 50000);
   const yearly = {
     ...price,
-    unit_amount: 45000,
+    unit_amount: 20000,
     recurring: { interval: "year", interval_count: 1 },
   };
   assert.equal(matchesPlan(yearly, "annual"), true);
@@ -102,10 +103,10 @@ test("passe termina em um ano de calendário e trata 29 de fevereiro", () => {
 });
 test("simulação separa entrada de caixa, recorrência e equivalente dos passes", () => {
   const value = estimateSales(10, 2, 3, 100, 5, 2);
-  assert.equal(value.gross, 2900);
-  assert.equal(value.mrr, 575);
+  assert.equal(value.gross, 2100);
+  assert.ok(Math.abs(value.mrr - (200 + 400 / 12)) < 0.000001);
   assert.equal(value.passEquivalent, 125);
-  assert.equal(value.estimatedBalance, 2625);
+  assert.equal(value.estimatedBalance, 1865);
 });
 
 import { matchesTestPrice } from "../lib/billing-test";

@@ -1,22 +1,22 @@
 export const PLANS = {
   monthly: {
-    amount: 5000,
+    amount: 2000,
     currency: "brl",
     interval: "month",
-    label: "R$ 50,00",
+    label: "R$ 20,00",
     name: "Mensal",
-    description: "R$ 50 por mês. Renovação automática até cancelar.",
+    description: "R$ 20 por mês. Renovação automática até cancelar.",
     env: "STRIPE_PRICE_ID",
     mode: "subscription",
   },
   annual: {
-    amount: 45000,
+    amount: 20000,
     currency: "brl",
     interval: "year",
-    label: "R$ 450,00",
+    label: "R$ 200,00",
     name: "Anual com renovação",
     description:
-      "R$ 450 por ano, cobrados de uma vez, sem parcelamento. Renovação anual automática até cancelar. Equivale a R$ 37,50/mês.",
+      "R$ 200 por ano, cobrados de uma vez, sem parcelamento. Renovação anual automática até cancelar. Equivale a aproximadamente R$ 16,67/mês.",
     env: "STRIPE_ANNUAL_PRICE_ID",
     mode: "subscription",
   },

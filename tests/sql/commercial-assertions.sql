@@ -38,10 +38,14 @@ begin
  insert into subscriptions(stripe_subscription_id,user_id,status,price_id,period_end,event_created) values('sub_annual','cccccccc-cccc-4ccc-8ccc-cccccccccccc','active','price_annual',extract(epoch from now()+interval '1 year'),1);
  select public.master_customer_dashboard('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','price_monthly','price_annual',1,'','all') into details;
  if (details->'metrics'->>'registered')::int <> 2 then raise exception 'master counted as customer'; end if;
- if (details->'metrics'->>'mrrCents')::int <> 3750 then raise exception 'annual inflates MRR'; end if;
+ if abs((details->'metrics'->>'mrrCents')::numeric - 20000.0/12) > 0.001 then raise exception 'annual inflates MRR'; end if;
  if (details->'metrics'->>'grossCents')::int <> 100000 or (details->'metrics'->>'netBeforeFeesCents')::int <> 0 then raise exception 'receipts or refunds incorrect'; end if;
  select public.master_customer_dashboard('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','price_monthly','price_annual',1,'family@example.test','all') into details;
  if (details->>'total')::int <> 1 then raise exception 'customer filtering failed'; end if;
+ update subscriptions set price_id='price_old_annual' where stripe_subscription_id='sub_annual';
+ select public.master_customer_dashboard('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','price_monthly','price_annual,price_old_annual',1,'','all') into details;
+ if (details->'metrics'->>'annual')::int <> 1 or (details->'metrics'->>'mrrCents')::numeric <> 3750 then raise exception 'legacy annual missing or counted at new price'; end if;
+ update subscriptions set price_id='price_annual' where stripe_subscription_id='sub_annual';
  if public.acquire_checkout_lock('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') is null then raise exception 'first checkout lock missing'; end if;
  if public.acquire_checkout_lock('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb') is not null then raise exception 'concurrent checkout allowed'; end if;
  insert into auth.users(id,email,last_sign_in_at) values

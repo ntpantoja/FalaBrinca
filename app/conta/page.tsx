@@ -628,8 +628,8 @@ export default function AccountPage() {
                   <p>
                     Exclusivo da conta autorizada. Este teste cria uma
                     assinatura mensal de R$ 5,00, com renovação automática até
-                    cancelar. Os planos dos clientes continuam em R$ 50/mês e R$
-                    450/ano.
+                    cancelar. Os planos dos clientes continuam em R$ 20/mês e R$
+                    200/ano.
                   </p>
                   <p>
                     No modo de produção do Stripe, o valor é cobrado de verdade.

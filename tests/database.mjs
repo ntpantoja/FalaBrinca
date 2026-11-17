@@ -79,6 +79,12 @@ try {
       if (select content->>'audio_url' from learning_activities where id='preserve-recording') <> 'https://example.test/custom.webm' then raise exception 'existing recording changed'; end if;
       begin insert into learning_activities values('invalid','unknown','{}'); raise exception 'invalid kind accepted'; exception when check_violation then null; end;
     end; $$;`);
+  const priceMigration = readFileSync(
+    "supabase/update-plan-prices.sql",
+    "utf8",
+  );
+  sql(priceMigration);
+  sql(priceMigration);
   sql(readFileSync("tests/sql/commercial-assertions.sql", "utf8"));
   const register = (id) =>
     execute(

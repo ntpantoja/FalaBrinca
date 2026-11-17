@@ -371,7 +371,7 @@ test("fatura anual registra recebimento real sem confundir com cobrança mensal"
     id: "in_paid",
     status: "paid",
     currency: "brl",
-    amount_paid: 45000,
+    amount_paid: 20000,
     status_transitions: { paid_at: 1794484800 },
     lines: {
       data: [{ pricing: { price_details: { price: "price_annual" } } }],
@@ -392,7 +392,7 @@ test("fatura anual registra recebimento real sem confundir com cobrança mensal"
   );
   const receipt = state.writes.find((w) => w.name === "payment_receipts")!;
   assert.equal(receipt.data.plan, "annual");
-  assert.equal(receipt.data.amount_paid, 45000);
+  assert.equal(receipt.data.amount_paid, 20000);
   assert.equal(receipt.data.payment_intent_id, "pi_invoice");
 });
 
@@ -435,8 +435,8 @@ test("compra privada de R$ 5 aceita somente a conta autorizada e não altera os 
     delete process.env.BILLING_TEST_ENABLED;
     const { state, db, stripe } = fixture();
     await prepareCheckout("monthly", user, db, stripe, true);
-    assert.equal(PLANS.monthly.amount, 5000);
-    assert.equal(PLANS.annual.amount, 45000);
+    assert.equal(PLANS.monthly.amount, 2000);
+    assert.equal(PLANS.annual.amount, 20000);
     assert.deepEqual(state.created[0].line_items, [
       { price: "price_private_test", quantity: 1 },
     ]);
@@ -476,5 +476,50 @@ test("compra privada de R$ 5 aceita somente a conta autorizada e não altera os 
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+  }
+});
+
+import { planForPrice, subscriptionFor, planPrice } from "../lib/billing";
+test("troca de preço preserva assinantes antigos sem oferecer preço antigo no checkout", async () => {
+  const keys = [
+    "STRIPE_LEGACY_MONTHLY_PRICE_IDS",
+    "STRIPE_LEGACY_ANNUAL_PRICE_IDS",
+  ] as const;
+  const old = keys.map((key) => process.env[key]);
+  try {
+    process.env.STRIPE_LEGACY_MONTHLY_PRICE_IDS =
+      " price_old_monthly, price_old_monthly ";
+    process.env.STRIPE_LEGACY_ANNUAL_PRICE_IDS = "price_old_annual";
+    assert.equal(planForPrice("price_old_monthly"), "monthly");
+    assert.equal(planForPrice("price_old_annual"), "annual");
+    assert.equal(planForPrice("price_unknown"), undefined);
+    for (const [id, plan] of [
+      ["price_old_monthly", "monthly"],
+      ["price_old_annual", "annual"],
+    ] as const) {
+      const { state, stripe, db } = fixture();
+      state.subscriptions.push({
+        id: "sub_old",
+        status: "active",
+        items: { data: [{ price: { id } }] },
+      });
+      const result = await subscriptionFor(stripe, "cus_test");
+      assert.equal(result.active, true);
+      assert.equal(result.plan, plan);
+      const checkoutPrice = await planPrice(stripe, plan);
+      assert.equal(
+        checkoutPrice.id,
+        plan === "monthly" ? "price_monthly" : "price_annual",
+      );
+      await assert.rejects(
+        () => prepareCheckout(plan, user, db, stripe),
+        /já tem uma assinatura/,
+      );
+    }
+  } finally {
+    keys.forEach((key, index) => {
+      if (old[index] === undefined) delete process.env[key];
+      else process.env[key] = old[index];
+    });
   }
 });

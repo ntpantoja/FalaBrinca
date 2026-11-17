@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireMaster } from "../../../../lib/access";
 import { failure, HttpError } from "../../../../lib/server";
-import { configuredPriceIds } from "../../../../lib/billing";
+import { recurringPriceIds } from "../../../../lib/billing";
 export async function GET(request: Request) {
   try {
     const { user, db } = await requireMaster(request);
@@ -23,11 +23,11 @@ export async function GET(request: Request) {
       ].includes(filter)
     )
       throw new HttpError(400, "Confira os filtros de consulta.");
-    const prices = configuredPriceIds();
+    const prices = recurringPriceIds();
     const { data, error } = await db.rpc("master_customer_dashboard", {
       p_master: user.id,
-      p_monthly: prices.monthly ?? "",
-      p_annual: prices.annual ?? "",
+      p_monthly: prices.monthly.join(","),
+      p_annual: prices.annual.join(","),
       p_page: page,
       p_search: search,
       p_filter: filter,

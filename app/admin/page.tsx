@@ -396,11 +396,11 @@ export default function MasterDashboard() {
             <dd>{money(estimate.estimatedBalance * 100)}</dd>
           </dl>
           <p>
-            O anual de R$ 450 entra de uma vez, mas equivale a R$ 37,50/mês de
-            receita recorrente. Esta simulação não prevê cancelamentos nem
-            substitui sua contabilidade. O saldo é de caixa do mês e não
-            desconta automaticamente os custos futuros de atender os acessos
-            anuais. Custos zerados não significam custos inexistentes.
+            O anual de R$ 200 entra de uma vez, mas equivale a aproximadamente
+            R$ 16,67/mês de receita recorrente. Esta simulação não prevê
+            cancelamentos nem substitui sua contabilidade. O saldo é de caixa do
+            mês e não desconta automaticamente os custos futuros de atender os
+            acessos anuais. Custos zerados não significam custos inexistentes.
           </p>
         </section>
       )}

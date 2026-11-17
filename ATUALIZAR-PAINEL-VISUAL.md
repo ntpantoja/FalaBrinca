@@ -5,7 +5,7 @@
 ## Como ficou o fluxo
 
 1. O link principal abre diretamente **Criar conta / Já tenho conta**, com Google e e-mail. Não há página de apresentação antes do cadastro.
-2. Depois da confirmação, o usuário completa o perfil e contrata o plano de **R$ 50,00/mês**, na mesma área de acesso. O pagamento é confirmado no checkout seguro Stripe.
+2. Depois da confirmação, o usuário completa o perfil e contrata o plano de **R$ 20,00/mês**, na mesma área de acesso. O pagamento é confirmado no checkout seguro Stripe.
 3. Quando o servidor confirma assinatura ativa, o app abre o painel automaticamente. O parâmetro `checkout=success` sozinho não libera acesso.
 4. O painel apresenta Começar Atividade, Progresso, Pais, Quebra-cabeças, Jogos de memória e Configurações, com os cards e as cores inspirados nas referências.
 5. A conta master continua dispensada da assinatura e pode abrir o editor de conteúdo.

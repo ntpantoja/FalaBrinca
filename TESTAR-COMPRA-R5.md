@@ -1,6 +1,6 @@
 # Teste privado de compra de R$ 5
 
-Os planos públicos continuam em R$ 50/mês e R$ 450/ano. A compra de teste é uma assinatura mensal separada de R$ 5, disponível somente para a conta autorizada no servidor. O master pode testar o checkout mesmo já tendo acesso gratuito de proprietário.
+Os planos públicos continuam em R$ 20/mês e R$ 200/ano. A compra de teste é uma assinatura mensal separada de R$ 5, disponível somente para a conta autorizada no servidor. O master pode testar o checkout mesmo já tendo acesso gratuito de proprietário.
 
 ## Ativar na sua conta master
 
@@ -25,7 +25,7 @@ Esta é uma assinatura mensal: haverá renovação de R$ 5 enquanto ela não for
 2. Na Vercel, configure `BILLING_TEST_ENABLED=false` e reimplante para impedir novas compras de teste.
 3. Mantenha `STRIPE_TEST_PRICE_ID` enquanto houver período pago ou eventos pendentes, para que o acesso e os eventos continuem sendo reconhecidos. Depois de encerrar os testes, pode arquivar esse preço no Stripe.
 
-Desativar o botão não cancela uma assinatura já existente. O teste não transforma automaticamente a assinatura em R$ 50: uma nova contratação do plano normal precisa de confirmação do cliente. Os preços públicos não foram reduzidos, então não há uma restauração de preço a fazer para os demais usuários.
+Desativar o botão não cancela uma assinatura já existente. O teste não transforma automaticamente a assinatura em R$ 20: uma nova contratação do plano normal precisa de confirmação do cliente. Os preços públicos não foram reduzidos, então não há uma restauração de preço a fazer para os demais usuários.
 
 Se quiser devolver o pagamento, o reembolso é feito no Stripe. Reembolso e cancelamento da renovação são operações diferentes. Confira as taxas e condições da sua conta Stripe.
 

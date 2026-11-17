@@ -31,8 +31,8 @@ As taxas reais dependem do Stripe, do meio de pagamento, do país do cartão e d
 
 Exemplo apenas para planejamento:
 
-- Mensal de R$ 50: reserva de R$ 3, sobrando R$ 47 antes de hospedagem, impostos e outras despesas.
-- Anual de R$ 450: reserva de R$ 27, sobrando R$ 423 no ano; equivale a R$ 35,25 por mês antes das demais despesas.
+- Mensal de R$ 20: reserva de R$ 1,20, sobrando R$ 18,80 antes de hospedagem, impostos e outras despesas.
+- Anual de R$ 200: reserva de R$ 12, sobrando R$ 188 no ano; equivale a aproximadamente R$ 15,67 por mês antes das demais despesas.
 
 Impostos do negócio, emissão de notas, abertura/regularização da empresa e eventual contabilidade não estão incluídos nos R$ 300–400. Dependem do seu CNPJ, atividade e regime tributário; peça uma proposta ao contador. Divulgação e suporte também são despesas separadas, conforme a estratégia escolhida.
 
@@ -40,10 +40,10 @@ Impostos do negócio, emissão de notas, abertura/regularização da empresa e e
 
 Usando custos fixos de R$ 300/mês e a hipótese de taxa de 6%:
 
-- Aproximadamente **7 clientes mensais**: 7 × R$ 47 = R$ 329/mês.
-- Ou aproximadamente **9 clientes anuais**: 9 × R$ 423 ÷ 12 = R$ 317,25/mês equivalente.
+- Aproximadamente **16 clientes mensais**: 16 × R$ 18,80 = R$ 300,80/mês.
+- Ou aproximadamente **20 clientes anuais**: 20 × R$ 188 ÷ 12 = aproximadamente R$ 313,33/mês equivalente.
 
-Com R$ 400/mês de custos fixos, seriam aproximadamente 9 mensais ou 12 anuais. Esses pontos de equilíbrio cobrem somente a infraestrutura modelada, sem impostos, contador, propaganda, reembolsos, cancelamentos ou remuneração do seu trabalho. O dinheiro anual entra de uma vez, mas precisa sustentar o atendimento durante os 12 meses.
+Com R$ 400/mês de custos fixos, seriam aproximadamente 22 mensais ou 26 anuais. Esses pontos de equilíbrio cobrem somente a infraestrutura modelada, sem impostos, contador, propaganda, reembolsos, cancelamentos ou remuneração do seu trabalho. O dinheiro anual entra de uma vez, mas precisa sustentar o atendimento durante os 12 meses.
 
 No dashboard master, ajuste custos fixos e taxas do simulador aos seus valores reais. Não trate contas cadastradas como vendas nem o pagamento anual inteiro como receita mensal.
 

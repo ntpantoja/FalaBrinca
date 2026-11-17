@@ -4,7 +4,7 @@ Aplicativo educativo visual para crianças de 3 a 5 anos, acompanhado por um adu
 
 ## Fluxo atual
 
-- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 50/mês**, **R$ 450/ano com renovação automática**, cobrado de uma vez e sem parcelamento na mesma área. Após confirmação do acesso, assinantes abrem o painel de prática e a conta master abre o dashboard administrativo.
+- `/`: cadastro/login direto com Google ou e-mail, perfil e escolha entre **R$ 20/mês**, **R$ 200/ano com renovação automática**, cobrado de uma vez e sem parcelamento na mesma área. Após confirmação do acesso, assinantes abrem o painel de prática e a conta master abre o dashboard administrativo.
 - `/conta`: cadastro, Google, confirmação por e-mail, perfil familiar e assinatura.
 - `/atividades`: biblioteca protegida. Todos os usuários comuns precisam de assinatura ativa ou passe válido e dispositivo cadastrado.
 - `/admin`: dashboard exclusivo do master, com indicadores e atalhos para conteúdo, área do usuário, conta e dispositivos.
@@ -84,7 +84,7 @@ Os testes de permissão verificam que metadados `role: master` no usuário comum
 - `app/api/checkout`, `account`, `portal`, `webhooks/stripe`: cobrança, status verificado e cancelamento pelo Stripe.
 - `app/api/profile`: nomes da família, com autorização explícita e verificação do usuário.
 
-Não altere o identificador do preço Stripe sem planejar migração dos assinantes. O valor aceito continua sendo BRL 5000, recorrente mensal.
+Os novos preços aceitos são BRL 2000/mês e BRL 20000/ano. Ao substituir os IDs na Vercel, preserve os anteriores nas variáveis `STRIPE_LEGACY_MONTHLY_PRICE_IDS` e `STRIPE_LEGACY_ANNUAL_PRICE_IDS`, conforme o guia comercial, para manter o acesso de assinantes existentes. As cobranças antigas não mudam automaticamente. Execute `supabase/update-plan-prices.sql` no Supabase para atualizar os valores e a classificação do dashboard master.
 
 ## PWA e privacidade
 

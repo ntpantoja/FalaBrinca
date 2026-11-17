@@ -35,7 +35,7 @@ export default function Information() {
       </p>
       <h2>Planos e cancelamento</h2>
       <p>
-        Há duas opções: R$ 50,00 por mês com renovação automática ou R$ 450,00
+        Há duas opções: R$ 20,00 por mês com renovação automática ou R$ 200,00
         por ano, cobrados de uma vez, com renovação anual automática. O anual
         não é parcelado. Criar conta não gera cobrança. A compra só é realizada
         ao confirmar no checkout seguro do Stripe. Os métodos disponíveis
@@ -43,10 +43,10 @@ export default function Information() {
       </p>
       <p>
         O acesso às atividades exige cadastro/login e assinatura ativa ou passe
-        antigo de 12 meses válido. Cada conta pode cadastrar até três dispositivos;
-        cada navegador ou perfil conta como um dispositivo. É possível
-        desconectar aparelhos pela tela Dispositivos. As verificações no
-        servidor bloqueiam novas consultas de atividades em aparelhos
+        antigo de 12 meses válido. Cada conta pode cadastrar até três
+        dispositivos; cada navegador ou perfil conta como um dispositivo. É
+        possível desconectar aparelhos pela tela Dispositivos. As verificações
+        no servidor bloqueiam novas consultas de atividades em aparelhos
         desconectados. A biblioteca é organizada por animais, objetos e
         alimentos, em três níveis de dificuldade. O proprietário pode atualizar
         o conteúdo. O cancelamento é feito em Minha conta → Gerenciar assinatura

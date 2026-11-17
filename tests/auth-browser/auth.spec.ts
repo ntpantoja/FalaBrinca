@@ -113,7 +113,7 @@ test("e-mail confirmado leva ao perfil, sem novo login; nomes, pagamento e saíd
   await page.getByRole("checkbox").check();
   await page.getByRole("button", { name: "Continuar para assinatura" }).click();
   await expect(page.getByRole("heading", { name: "Olá, Ana!" })).toBeVisible();
-  await page.getByRole("button", { name: "Assinar por R$ 50,00/mês" }).click();
+  await page.getByRole("button", { name: "Assinar por R$ 20,00/mês" }).click();
   await expect(page.getByRole("status")).toContainText(
     "Pagamento de teste indisponível",
   );
@@ -576,7 +576,7 @@ test("pagamento confirmado encaminha automaticamente ao painel — checkout e se
     });
   });
   await page.goto("/conta");
-  await page.getByRole("button", { name: "Assinar por R$ 50,00/mês" }).click();
+  await page.getByRole("button", { name: "Assinar por R$ 20,00/mês" }).click();
   await page.waitForURL("**/atividades");
   await expect(
     page.getByRole("button", { name: "Começar Atividade", exact: true }),
@@ -1011,7 +1011,7 @@ test("cadastro oferece somente mensal e anual com renovação explícita", async
   await expect(page.getByRole("radio")).toHaveCount(2);
   await page.getByRole("radio", { name: /Anual com renovação/ }).check();
   await expect(page.locator(".plan-option.selected")).toContainText(
-    "R$ 450,00",
+    "R$ 200,00",
   );
   await expect(page.locator(".plan-option.selected")).toContainText(
     "Renovação anual automática",
@@ -1446,8 +1446,8 @@ test("conta autorizada envia a compra de teste de R$ 5 sem alterar a oferta púb
   await expect(
     page.getByRole("region", { name: "Compra privada de teste" }),
   ).toContainText("R$ 5,00/mês");
-  await expect(page.locator(".plan-options")).toContainText("R$ 50,00");
-  await expect(page.locator(".plan-options")).toContainText("R$ 450,00");
+  await expect(page.locator(".plan-options")).toContainText("R$ 20,00");
+  await expect(page.locator(".plan-options")).toContainText("R$ 200,00");
   await page
     .getByRole("button", { name: "Testar compra por R$ 5,00/mês", exact: true })
     .click();

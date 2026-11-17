@@ -4,12 +4,23 @@
 
 | Opção | Cobrança | Renovação |
 | --- | --- | --- |
-| Mensal | R$ 50 a cada mês | Automática até cancelar |
-| Anual | R$ 450 de uma vez a cada ano | Automática até cancelar |
+| Mensal | R$ 20 a cada mês | Automática até cancelar |
+| Anual | R$ 200 de uma vez a cada ano | Automática até cancelar |
 
-Ambos incluem as mesmas atividades e até três dispositivos cadastrados. O anual tem desconto de 25% sobre 12 mensalidades. R$ 37,50/mês é somente uma comparação: a cobrança é R$ 450 à vista, sem parcelamento.
+Ambos incluem as mesmas atividades e até três dispositivos cadastrados. O anual tem desconto de aproximadamente 16,67% sobre 12 mensalidades. Aproximadamente R$ 16,67/mês é somente uma comparação: a cobrança é R$ 200 à vista, sem parcelamento.
 
 O pagamento único de R$ 500 foi retirado da oferta e não pode gerar novas compras pela API. Acessos e confirmações de compras antigas continuam sendo atendidos até o fim de sua validade.
+
+## Atualizar dos preços anteriores para R$ 20 e R$ 200
+
+1. Antes de substituir as variáveis na Vercel, copie os IDs anteriores. Guarde o antigo `STRIPE_PRICE_ID` em `STRIPE_LEGACY_MONTHLY_PRICE_IDS` e o antigo `STRIPE_ANNUAL_PRICE_ID` em `STRIPE_LEGACY_ANNUAL_PRICE_IDS`. Caso já haja outros IDs legados, acrescente os novos à lista, separados por vírgulas. Isso preserva o acesso de assinantes antigos e evita compra duplicada.
+2. No Stripe **em produção**, abra **Catálogo de produtos → FalaBrinca → Adicionar preço** e crie os preços recorrentes de **R$ 20/mês** e **R$ 200/ano**. O Stripe não permite alterar o valor de um preço já criado: crie novos preços.
+3. Na Vercel, substitua `STRIPE_PRICE_ID` pelo novo ID mensal e `STRIPE_ANNUAL_PRICE_ID` pelo novo ID anual; salve em **Produção** e reimplante.
+4. Confira os valores no checkout antes de pagar. Enquanto as variáveis apontarem aos valores anteriores, o app bloqueará novas compras por incompatibilidade de preço.
+
+Assinaturas existentes continuam no valor contratado no Stripe. Esta atualização não altera automaticamente a cobrança ou a renovação de assinantes antigos. A mudança dessas assinaturas exige uma ação separada no Stripe, com definição da data e do rateio; não foi executada pelo app. Checkouts antigos já abertos também podem conservar o valor antigo: encerre-os no Stripe para não receber novas compras nesse valor.
+
+Para atualizar o relatório financeiro e a classificação dos assinantes antigos no master, execute também `supabase/update-plan-prices.sql` no **Supabase → SQL Editor → New query → Run**. Esse arquivo atualiza somente a função do dashboard e não modifica cobranças. Não é preciso mudar chaves secretas nem webhook. A estimativa de recorrência usa os novos valores e a referência de R$ 50/mês e R$ 450/ano para IDs legados; recebimentos reais continuam vindo das faturas.
 
 ## 1. Supabase
 
@@ -21,8 +32,8 @@ Caso ainda não tenha atualizado, no Supabase abra **SQL Editor → New query**.
 
 Use o mesmo modo (teste ou produção) da chave secreta e do webhook. No **Catálogo de produtos**, abra o produto FalaBrinca e configure:
 
-1. **R$ 50,00, BRL, recorrente, todo mês.** Mantenha o preço mensal existente se já estiver correto.
-2. **R$ 450,00, BRL, recorrente, todo ano.** Cobrança anual de uma vez; não configure 12 parcelas.
+1. **R$ 20,00, BRL, recorrente, todo mês.** Crie um novo preço se o existente tiver outro valor.
+2. **R$ 200,00, BRL, recorrente, todo ano.** Cobrança anual de uma vez; não configure 12 parcelas.
 
 Copie o **ID do preço**, que começa com `price_`, de cada opção. Não use o ID de produto `prod_`. O app confere moeda, valor e intervalo no servidor antes de abrir o checkout.
 
@@ -34,8 +45,8 @@ Em **Configurações → Variáveis de ambiente**, mantenha as chaves atuais e c
 
 | Nome | Conteúdo |
 | --- | --- |
-| `STRIPE_PRICE_ID` | `price_...` do mensal de R$ 50 |
-| `STRIPE_ANNUAL_PRICE_ID` | `price_...` do anual recorrente de R$ 450 |
+| `STRIPE_PRICE_ID` | `price_...` do mensal de R$ 20 |
+| `STRIPE_ANNUAL_PRICE_ID` | `price_...` do anual recorrente de R$ 200 |
 
 Os IDs podem usar **Configuração**. As chaves secretas continuam usando **Segredo**. Aplique ao ambiente de Produção e reimplante depois de salvar.
 
@@ -75,9 +86,9 @@ O financeiro detalhado começa na entrega dos novos webhooks. Para completar rec
 
 ## 7. Simular receita
 
-O painel separa dinheiro recebido, reembolsos e receita recorrente mensal equivalente: R$ 50 por mensal ativo e R$ 37,50 por anual recorrente ativo. O anual gera R$ 450 de entrada de uma vez, não R$ 450 todo mês. A recorrência equivalente não garante renovações futuras.
+O painel separa dinheiro recebido, reembolsos e receita recorrente mensal equivalente: R$ 20 por mensal ativo e aproximadamente R$ 16,67 por anual recorrente ativo. O anual gera R$ 200 de entrada de uma vez, não R$ 200 todo mês. A recorrência equivalente não garante renovações futuras.
 
-Exemplo: 10 novas assinaturas mensais + 2 anuais geram R$ 1.400 de entrada bruta e R$ 575 de recorrência mensal equivalente. Informe custos fixos, percentuais de taxas/impostos e custo adicional por conta para estimar o saldo de caixa do mês. A simulação não desconta automaticamente os custos futuros de atender os acessos anuais, nem prevê cancelamentos ou todas as obrigações contábeis.
+Exemplo: 10 novas assinaturas mensais + 2 anuais geram R$ 600 de entrada bruta e aproximadamente R$ 233,33 de recorrência mensal equivalente. Informe custos fixos, percentuais de taxas/impostos e custo adicional por conta para estimar o saldo de caixa do mês. A simulação não desconta automaticamente os custos futuros de atender os acessos anuais, nem prevê cancelamentos ou todas as obrigações contábeis.
 
 ## 8. Conferir a configuração real
 

@@ -2,7 +2,7 @@
 
 > **Já configurou os serviços?** Para esta versão, faça também os passos de [ATUALIZAR-GOOGLE-E-PERFIL.md](ATUALIZAR-GOOGLE-E-PERFIL.md), incluindo tabela de perfis, retorno de confirmação e Google.
 
-# Como ativar cadastro e mensalidade de R$ 50,00
+# Como ativar cadastro e mensalidade de R$ 20,00
 
 O código está preparado, mas você precisa criar e configurar seus serviços. **Comece em modo de teste: nenhum cartão real deve ser cobrado nesta etapa.** Nunca envie chaves secretas pelo chat nem cole no GitHub.
 
@@ -22,7 +22,7 @@ O código está preparado, mas você precisa criar e configurar seus serviços. 
 
 1. Crie uma conta em https://stripe.com e selecione o ambiente **de teste** ou sandbox.
 2. No **Catálogo de produtos**, crie “Exploradores do Dino”.
-3. Adicione um preço **recorrente**, **mensal**, de **R$ 50,00**, moeda **BRL**. Copie o identificador `price_...`.
+3. Adicione um preço **recorrente**, **mensal**, de **R$ 20,00**, moeda **BRL**. Copie o identificador `price_...`.
 4. Localize a chave secreta do ambiente de teste (`sk_test_...`). Não use a chave publicável no lugar da secreta.
 5. Configure o **Portal do cliente** para permitir atualização do pagamento e **cancelamento ao final do período pago**. Desative mudanças de plano nesta primeira versão. Configure nome comercial, suporte e políticas no Stripe.
 6. Em **Workbench → Webhooks** (a localização pode variar), adicione um destino:
@@ -43,7 +43,7 @@ No projeto **FalaBrinca → Configurações → Variáveis de ambiente**, adicio
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Chave pública anon do Supabase                            |
 | `SUPABASE_SERVICE_ROLE_KEY`     | Chave secreta service_role do Supabase                    |
 | `STRIPE_SECRET_KEY`             | Chave secreta de teste do Stripe                          |
-| `STRIPE_PRICE_ID`               | Identificador do preço mensal de R$ 50,00 criado no teste |
+| `STRIPE_PRICE_ID`               | Identificador do preço mensal de R$ 20,00 criado no teste |
 | `STRIPE_WEBHOOK_SECRET`         | Segredo do destino webhook de teste                       |
 
 Marque as chaves secretas como sensíveis quando essa opção estiver disponível. Não adicione prefixo `NEXT_PUBLIC_` a nenhuma chave secreta. A URL e a chave `anon` do Supabase são públicas por projeto; as permissões dos dados são garantidas pela autenticação e RLS.
@@ -59,7 +59,7 @@ Para testar localmente, copie `.env.example` para `.env.local`, preencha com os 
 1. Abra o app e faça seu cadastro ou entre na conta existente. O formulário fica na tela inicial.
 2. Cadastre um **e-mail do responsável** com senha de pelo menos 8 caracteres e leia as informações de uso. Criar conta não cobra nada.
 3. Abra o e-mail e confirme o cadastro. O app deve voltar conectado e pedir seu nome, o primeiro nome da criança e a autorização. Preencha e salve. Se o link estiver expirado, use o reenvio de confirmação.
-4. Confira “Sem assinatura” e **R$ 50,00/mês**. Clique em **Assinar por R$ 50,00/mês**.
+4. Confira “Sem assinatura” e **R$ 20,00/mês**. Clique em **Assinar por R$ 20,00/mês**.
 5. No checkout de teste, confirme o preço e utilize um cartão de teste autorizado pela documentação do Stripe — por exemplo, `4242 4242 4242 4242`, data futura e CVC de teste. Nunca use cartão real no ambiente de teste.
 6. Ao retornar, clique em **Atualizar status**. O acesso só será liberado se o servidor consultar uma assinatura ativa no Stripe. O endereço `?checkout=success` por si só não libera nada.
 7. Abra **Explorar a trilha de assinantes** e escolha e conclua uma das atividades da biblioteca. Saia da conta e tente abrir novamente: deve exigir login.
@@ -78,7 +78,7 @@ Ainda será necessário cadastrar a identificação comercial e um canal real de
 Depois de concluir os testes e a preparação comercial:
 
 1. Ative sua conta comercial Stripe conforme os requisitos solicitados pelo provedor.
-2. Crie novamente o produto e o preço de **R$ 50,00/mês** no ambiente real. O identificador de teste não funciona no real.
+2. Crie novamente o produto e o preço de **R$ 20,00/mês** no ambiente real. O identificador de teste não funciona no real.
 3. Configure o portal e o webhook também no ambiente real.
 4. Substitua na Vercel somente as credenciais Stripe pelo conjunto real correspondente (chave, preço e segredo de webhook).
 5. Reimplante e confira o preço apresentado no checkout antes da divulgação.
