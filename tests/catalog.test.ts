@@ -4,9 +4,10 @@ import { catalog } from "../lib/catalog";
 import { allContent } from "../lib/activity-content";
 import { sequencePictures } from "../lib/pictures";
 import { parseProfile } from "../lib/profile";
-test("131 atividades distintas e 393 rodadas completas, por categoria e dificuldade", () => {
-  assert.equal(catalog.length, 131);
-  assert.equal(new Set(catalog.map((a) => a.id)).size, 131);
+test("139 atividades distintas e 417 rodadas completas, por categoria e dificuldade", () => {
+  assert.equal(catalog.length, 139);
+  assert.equal(new Set(catalog.map((a) => a.id)).size, 139);
+  assert.equal(catalog.filter((a) => a.kind === "sentence").length, 16);
   assert.equal(catalog.filter((a) => a.difficulty === "beginner").length, 107);
   for (const category of [
     "animals",
@@ -39,7 +40,7 @@ test("131 atividades distintas e 393 rodadas completas, por categoria e dificuld
     );
   assert.equal(
     catalog.reduce((n, a) => n + allContent[a.id].rounds.length, 0),
-    393,
+    417,
   );
   for (const activity of catalog) {
     const content = allContent[activity.id];
