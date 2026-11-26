@@ -18,7 +18,7 @@ As categorias são **Animais, Alimentos, Cores, Objetos, Emoções, Transportes,
 2. **Intermediário**: associações de imagens com instruções faladas.
 3. **Avançado**: organização de histórias em imagens.
 
-O editor master separa **Figuras e linguagem**, **Quebra-cabeças** e **Jogos de memória**, com filtros de categoria, dificuldade e publicação. Na área infantil, **Começar Atividade** mostra todos os jogos da categoria escolhida em uma única lista. Os atalhos de quebra-cabeça e memória abrem diretamente suas modalidades.
+O editor master separa **Figuras e linguagem**, **Quebra-cabeças** e **Jogos de memória**, com filtros de categoria, dificuldade e publicação. Na área infantil, **Começar Atividade** abre a trilha da categoria, com três níveis de dificuldade e um jogo pronto para abrir. Ao terminar um jogo, a criança pode seguir direto para o próximo. Concluir os jogos de um nível libera o seguinte, e o progresso é guardado no navegador. Os atalhos de quebra-cabeça e memória abrem diretamente suas modalidades.
 
 No **Painel dos Pais → Combinado de hoje**, configure metas opcionais de minutos e/ou atividades completas por dia. As barras mostram o realizado e sugerem uma pausa quando a meta é atingida, sem bloquear jogos. O tempo inclui somente atividades abertas, visíveis e sem pausa; rodadas e peças não contam como atividades completas. O dia segue Brasília. Metas e registros ficam neste navegador, sem sincronização ou soma entre os três dispositivos. Não é necessário executar SQL para essa organização e essas metas.
 

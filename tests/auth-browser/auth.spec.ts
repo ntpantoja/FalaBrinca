@@ -243,7 +243,7 @@ for (const activity of catalog)
       r.fulfill({ json: content[activity.id] }),
     );
     await page.route("**/api/library", (r) =>
-      r.fulfill({ json: { activities: catalog, role: "subscriber" } }),
+      r.fulfill({ json: { activities: [activity], role: "subscriber" } }),
     );
     await page.goto("/atividades");
     await page.getByRole("button", { name: "Começar Atividade" }).click();
@@ -1479,9 +1479,7 @@ test("dashboard master tem atalho de R$ 5 e mostra diagnóstico em vez de oculta
   ).toBeDisabled();
 });
 
-test("metas diárias são salvas e a categoria mostra todas as atividades", async ({
-  page,
-}) => {
+test("metas diárias são salvas", async ({ page }) => {
   await authMock(page);
   await page.addInitScript(
     (value) => localStorage.setItem("sb-127-auth-token", JSON.stringify(value)),
@@ -1505,23 +1503,63 @@ test("metas diárias são salvas e a categoria mostra todas as atividades", asyn
   await page.getByRole("button", { name: "Pais", exact: true }).click();
   await expect(page.getByLabel("Minutos por dia")).toHaveValue("10");
   await expect(page.getByLabel("Atividades por dia")).toHaveValue("3");
-  await page.getByRole("button", { name: "Voltar", exact: true }).click();
-  await page.getByRole("button", { name: "Começar Atividade" }).click();
-  await page.getByRole("button", { name: "Animais", exact: true }).click();
-  const cards = page.locator(".kids-activity-open");
-  await expect(cards).toHaveCount(
-    catalog.filter((activity) => activity.category === "animals").length,
+});
+
+test("trilha da categoria encadeia jogos e desbloqueia o nível seguinte", async ({
+  page,
+}) => {
+  await paidApp(page);
+  const ids = ["animais", "dinossauros", "habitats", "frases-animais"];
+  const games = ids.map((id) => catalog.find((a) => a.id === id)!);
+  await page.route("**/api/library", (r) =>
+    r.fulfill({ json: { activities: games, role: "subscriber" } }),
   );
+  async function openCategory() {
+    await page.getByRole("button", { name: "Começar Atividade" }).click();
+    await page.getByRole("button", { name: "Animais", exact: true }).click();
+  }
+  async function finishFigures(id: string) {
+    for (const round of content[id].rounds) {
+      await page
+        .getByRole("button", { name: round.answer, exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: "Pratiquei esta palavra!" })
+        .click();
+    }
+  }
+
+  await page.goto("/atividades");
+  await openCategory();
+  await expect(page.locator(".kids-activity-open")).toHaveCount(1);
   await expect(
-    cards.filter({ hasText: "Montar frases" }).first(),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Nível 2, bloqueado" }),
+  ).toBeDisabled();
   await expect(
-    cards.filter({ hasText: "Quebra-cabeças" }).first(),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Nível 3, bloqueado" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: `Jogar ${games[0].title}` }).click();
+  await finishFigures(games[0].id);
+  await page.getByRole("button", { name: "Próxima atividade" }).click();
+  await finishFigures(games[1].id);
+  await page.getByRole("button", { name: "Voltar à categoria" }).click();
   await expect(
-    cards.filter({ hasText: "Jogo da memória" }).first(),
+    page.getByRole("button", { name: "Nível 1, concluído" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Nível 2, disponível" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Nível 3, bloqueado" }),
+  ).toBeDisabled();
+
+  await page.reload();
+  await openCategory();
+  await expect(
+    page.getByRole("button", { name: `Jogar ${games[2].title}` }),
   ).toBeVisible();
-  await expect(page.getByRole("group", { name: "Dificuldade" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Nível 2, disponível" }).click();
+  await expect(page.locator(".picture-prompt")).toBeVisible();
 });
 
 test("meta de tempo registra prática mas exclui pausa", async ({ page }) => {

@@ -3355,9 +3355,29 @@ body {
   border-color: #a5efc8;
   color: #168269;
 }
-.kids-activity-list {
+.kids-levels {
   display: grid;
-  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.kids-level {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 88px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--kids-purple);
+  color: white;
+}
+.kids-level:disabled {
+  background: #edf1f6;
+  color: #536682;
+}
+.kids-level small {
+  font-size: 11px;
 }
 .kids-activity-card {
   position: relative;
