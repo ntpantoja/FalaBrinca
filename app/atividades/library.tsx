@@ -10,7 +10,7 @@ import {
   BarChart3,
   UsersRound,
   Settings,
-  Star,
+  Lock,
   ArrowRight,
   Heart,
   ShieldCheck,
@@ -290,11 +290,27 @@ export default function Library({
     game?.adventure.kind === "memory" ? MemoryActivity : PuzzleActivity;
   const level = Math.floor(progress.stars / 10) + 1;
   const levelPercent = (progress.stars % 10) * 10;
-  const filtered = activities.filter(
+  const categoryActivities = activities.filter(
     (a) =>
       a.category === category &&
       (format === "all" || activityGroup(a.kind) === format),
   );
+  const levels = (["beginner", "intermediate", "advanced"] as const).map(
+    (difficulty) => {
+      const items = categoryActivities.filter(
+        (a) => a.difficulty === difficulty,
+      );
+      const completed = items.filter((a) => progress.completed[a.id]).length;
+      return {
+        items,
+        completed,
+        next: items.find((a) => !progress.completed[a.id]),
+      };
+    },
+  );
+  const nextActivity = levels.find((level) => level.next)?.next;
+  const featuredActivity =
+    nextActivity ?? levels.find((level) => level.items.length)?.items[0];
   return (
     <main className={`kids-app ${game ? "kids-playing" : ""}`}>
       {game ? (
@@ -345,8 +361,27 @@ export default function Library({
           <h1>Que bela descoberta!</h1>
           <p>{reward.title}</p>
           <strong className="reward-stars">⭐ +{reward.stars}</strong>
+          {nextActivity && (
+            <button
+              className="kids-action purple-action"
+              disabled={busy}
+              onClick={() => void start(nextActivity)}
+            >
+              <Play size={22} />
+              Próxima atividade
+            </button>
+          )}
+          <button
+            className="kids-action outlined-action"
+            disabled={busy}
+            onClick={() => navigate("activities")}
+          >
+            Voltar à categoria
+          </button>
+          {message && <p role="status">{message}</p>}
           <button
             className="kids-action purple-action"
+            disabled={busy}
             onClick={() => navigate("home")}
           >
             <Play size={22} />
@@ -354,6 +389,7 @@ export default function Library({
           </button>
           <button
             className="kids-action outlined-action"
+            disabled={busy}
             onClick={() => navigate("progress")}
           >
             <BarChart3 size={21} />
@@ -479,59 +515,104 @@ export default function Library({
           <KidsHeader
             title={`${icons[category]} ${categories[category]}`}
             subtitle={format === "all" ? undefined : activityGroups[format]}
-            onBack={() => navigate("categories")}
+            onBack={() => {
+              if (!busy) navigate("categories");
+            }}
           />
-          <div className="kids-activity-list">
-            {filtered.map((a) => (
-              <article className="kids-card kids-activity-card" key={a.id}>
+          {featuredActivity && (
+            <>
+              <div
+                className="kids-levels"
+                role="group"
+                aria-label="Níveis da categoria"
+              >
+                {levels.map((level, index) => {
+                  const unavailable = !level.items.length;
+                  const locked = levels
+                    .slice(0, index)
+                    .some((previous) => previous.next);
+                  const finished = level.items.length > 0 && !level.next;
+                  const status = unavailable
+                    ? "sem atividades"
+                    : locked
+                      ? "bloqueado"
+                      : finished
+                        ? "concluído"
+                        : "disponível";
+                  return (
+                    <button
+                      key={index}
+                      className="kids-level"
+                      disabled={busy || unavailable || locked}
+                      aria-label={`Nível ${index + 1}, ${status}`}
+                      onClick={() => void start(level.next ?? level.items[0])}
+                    >
+                      {locked || unavailable ? (
+                        <Lock size={20} />
+                      ) : finished ? (
+                        <Check size={20} />
+                      ) : (
+                        <span aria-hidden="true">⭐</span>
+                      )}
+                      <strong>{index + 1}</strong>
+                      <small>
+                        {level.completed}/{level.items.length}
+                      </small>
+                    </button>
+                  );
+                })}
+              </div>
+              <article className="kids-card kids-activity-card">
                 <button
                   className="kids-activity-open"
-                  aria-label={`Jogar ${a.title}`}
+                  aria-label={`Jogar ${featuredActivity.title}`}
                   disabled={busy}
-                  onClick={() => void start(a)}
+                  onClick={() => void start(featuredActivity)}
                 >
-                  <span aria-hidden="true">{a.emoji}</span>
+                  <span aria-hidden="true">{featuredActivity.emoji}</span>
                   <div>
-                    <h2>{a.title}</h2>
-                    <small>{kindLabels[a.kind]}</small>
+                    <h2>{featuredActivity.title}</h2>
+                    <small>{kindLabels[featuredActivity.kind]}</small>
                     <small>
-                      {progress.completed[a.id]
+                      {progress.completed[featuredActivity.id]
                         ? "✓ Já explorada"
-                        : "Ouvir e descobrir juntos"}
+                        : "Toque para jogar"}
                     </small>
                   </div>
                   <ArrowRight size={21} />
                 </button>
                 <button
                   className={
-                    progress.favorites.includes(a.id)
+                    progress.favorites.includes(featuredActivity.id)
                       ? "word-favorite active"
                       : "word-favorite"
                   }
-                  aria-label={`Favoritar ${a.title}`}
-                  aria-pressed={progress.favorites.includes(a.id)}
+                  aria-label={`Favoritar ${featuredActivity.title}`}
+                  aria-pressed={progress.favorites.includes(
+                    featuredActivity.id,
+                  )}
                   onClick={() =>
                     setProgress((p) => ({
                       ...p,
-                      favorites: p.favorites.includes(a.id)
-                        ? p.favorites.filter((id) => id !== a.id)
-                        : [...p.favorites, a.id],
+                      favorites: p.favorites.includes(featuredActivity.id)
+                        ? p.favorites.filter((id) => id !== featuredActivity.id)
+                        : [...p.favorites, featuredActivity.id],
                     }))
                   }
                 >
                   <Heart
                     size={19}
                     fill={
-                      progress.favorites.includes(a.id)
+                      progress.favorites.includes(featuredActivity.id)
                         ? "currentColor"
                         : "none"
                     }
                   />
                 </button>
               </article>
-            ))}
-          </div>
-          {!filtered.length && (
+            </>
+          )}
+          {!featuredActivity && (
             <div className="kids-card kids-empty">
               <span>{icons[category]}</span>
               <p>Ainda não há atividades disponíveis aqui.</p>
