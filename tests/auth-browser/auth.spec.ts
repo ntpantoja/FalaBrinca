@@ -246,30 +246,10 @@ for (const activity of catalog)
       r.fulfill({ json: { activities: catalog, role: "subscriber" } }),
     );
     await page.goto("/atividades");
-    await page
-      .getByRole("button", {
-        name:
-          activity.kind === "puzzle"
-            ? /Quebra-cabeças/
-            : activity.kind === "memory"
-              ? /Jogos de memória/
-              : "Começar Atividade",
-        exact: false,
-      })
-      .click();
+    await page.getByRole("button", { name: "Começar Atividade" }).click();
     await page
       .getByRole("button", { name: categories[activity.category], exact: true })
       .click();
-    if (activity.difficulty !== "beginner")
-      await page
-        .getByRole("button", {
-          name:
-            activity.difficulty === "intermediate"
-              ? "Intermediário: associar figuras"
-              : "Avançado: histórias visuais",
-          exact: true,
-        })
-        .click();
     await page
       .getByRole("button", { name: `Jogar ${activity.title}`, exact: true })
       .click();
@@ -1499,7 +1479,7 @@ test("dashboard master tem atalho de R$ 5 e mostra diagnóstico em vez de oculta
   ).toBeDisabled();
 });
 
-test("metas diárias são salvas e modalidades permanecem separadas", async ({
+test("metas diárias são salvas e a categoria mostra todas as atividades", async ({
   page,
 }) => {
   await authMock(page);
@@ -1526,18 +1506,22 @@ test("metas diárias são salvas e modalidades permanecem separadas", async ({
   await expect(page.getByLabel("Minutos por dia")).toHaveValue("10");
   await expect(page.getByLabel("Atividades por dia")).toHaveValue("3");
   await page.getByRole("button", { name: "Voltar", exact: true }).click();
-  await page.getByRole("button", { name: /Quebra-cabeças/ }).click();
+  await page.getByRole("button", { name: "Começar Atividade" }).click();
   await page.getByRole("button", { name: "Animais", exact: true }).click();
-  for (const difficulty of [
-    "Inicial: ouvir e repetir",
-    "Intermediário: associar figuras",
-    "Avançado: histórias visuais",
-  ]) {
-    await page.getByRole("button", { name: difficulty, exact: true }).click();
-    const cards = page.locator(".kids-activity-open");
-    for (const label of await cards.allTextContents())
-      expect(label).toContain("Quebra-cabeça");
-  }
+  const cards = page.locator(".kids-activity-open");
+  await expect(cards).toHaveCount(
+    catalog.filter((activity) => activity.category === "animals").length,
+  );
+  await expect(
+    cards.filter({ hasText: "Montar frases" }).first(),
+  ).toBeVisible();
+  await expect(
+    cards.filter({ hasText: "Quebra-cabeças" }).first(),
+  ).toBeVisible();
+  await expect(
+    cards.filter({ hasText: "Jogo da memória" }).first(),
+  ).toBeVisible();
+  await expect(page.getByRole("group", { name: "Dificuldade" })).toHaveCount(0);
 });
 
 test("meta de tempo registra prática mas exclui pausa", async ({ page }) => {

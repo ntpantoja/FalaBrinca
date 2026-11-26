@@ -1,10 +1,6 @@
 "use client";
 import { creditPractice } from "../../lib/daily-usage";
-import {
-  activityGroup,
-  activityGroups,
-  type ActivityGroup,
-} from "../../lib/activity-groups";
+import { activityGroup, activityGroups } from "../../lib/activity-groups";
 import Link from "next/link";
 import { authenticatedFetch, SessionExpiredError } from "../../lib/session";
 import { unlockActivityAudio } from "../../lib/activity-audio-player";
@@ -80,10 +76,8 @@ export default function Library({
   const [progress, setProgress] = useState<Progress>(emptyProgress);
   const [ready, setReady] = useState(false);
   const [name, setName] = useState("Explorador");
-  const [format, setFormat] = useState<ActivityGroup>("learning");
+  const [format, setFormat] = useState<"all" | "puzzle" | "memory">("all");
   const [category, setCategory] = useState<Category>("animals");
-  const [difficulty, setDifficulty] =
-    useState<Adventure["difficulty"]>("beginner");
   const [game, setGame] = useState<{
     adventure: Adventure;
     content: ActivityContent;
@@ -289,18 +283,6 @@ export default function Library({
   }
   function chooseCategory(value: Category) {
     setCategory(value);
-    setDifficulty(
-      activities.find(
-        (a) =>
-          a.category === value &&
-          activityGroup(a.kind) === format &&
-          a.difficulty === "beginner",
-      )?.difficulty ??
-        activities.find(
-          (a) => a.category === value && activityGroup(a.kind) === format,
-        )?.difficulty ??
-        "beginner",
-    );
     setView("activities");
     setMessage("");
   }
@@ -311,8 +293,7 @@ export default function Library({
   const filtered = activities.filter(
     (a) =>
       a.category === category &&
-      a.difficulty === difficulty &&
-      activityGroup(a.kind) === format,
+      (format === "all" || activityGroup(a.kind) === format),
   );
   return (
     <main className={`kids-app ${game ? "kids-playing" : ""}`}>
@@ -414,7 +395,7 @@ export default function Library({
             <button
               className="kids-action purple-action start-practice"
               onClick={() => {
-                setFormat("learning");
+                setFormat("all");
                 navigate("categories");
               }}
             >
@@ -497,44 +478,9 @@ export default function Library({
         <>
           <KidsHeader
             title={`${icons[category]} ${categories[category]}`}
-            subtitle={activityGroups[format]}
+            subtitle={format === "all" ? undefined : activityGroups[format]}
             onBack={() => navigate("categories")}
           />
-          <div
-            className="kids-difficulty"
-            role="group"
-            aria-label="Dificuldade"
-          >
-            {(["beginner", "intermediate", "advanced"] as const).map(
-              (value, i) => (
-                <button
-                  key={value}
-                  aria-label={
-                    [
-                      "Inicial: ouvir e repetir",
-                      "Intermediário: associar figuras",
-                      "Avançado: histórias visuais",
-                    ][i]
-                  }
-                  className={difficulty === value ? "selected" : ""}
-                  aria-pressed={difficulty === value}
-                  onClick={() => {
-                    setDifficulty(value);
-                  }}
-                >
-                  <span>{"⭐".repeat(i + 1)}</span>
-                  <small>
-                    {
-                      (format === "learning"
-                        ? ["Inicial", "Associações", "Histórias"]
-                        : ["Inicial", "Intermediário", "Avançado"])[i]
-                    }
-                  </small>
-                </button>
-              ),
-            )}
-          </div>
-          <p className="muted">{activityGroups[format]}</p>
           <div className="kids-activity-list">
             {filtered.map((a) => (
               <article className="kids-card kids-activity-card" key={a.id}>
@@ -588,7 +534,7 @@ export default function Library({
           {!filtered.length && (
             <div className="kids-card kids-empty">
               <span>{icons[category]}</span>
-              <p>Ainda não há atividade publicada neste nível.</p>
+              <p>Ainda não há atividades disponíveis aqui.</p>
               <button
                 className="kids-action outlined-action"
                 onClick={() => setView("categories")}

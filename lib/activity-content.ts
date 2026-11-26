@@ -296,6 +296,46 @@ const extra: ActivityContent[] = [
     ["🤝 💛", ["EU", "GOSTO", "DE", "VOCÊ"]],
     ["🧸 🌙", ["BOA", "NOITE", "AMIGO"]],
   ]),
+  phrases("frases-animais-acoes", [
+    ["🐶 🗣️", ["O", "CACHORRO", "LATE"]],
+    ["🐱 🥛", ["O", "GATO", "BEBE", "LEITE"]],
+    ["🐰 🥕", ["O", "COELHO", "PEGA", "A", "CENOURA"]],
+  ]),
+  phrases("frases-sabores", [
+    ["👧 🍇", ["A", "MENINA", "COME", "UVAS"]],
+    ["👦 🧃", ["O", "MENINO", "BEBE", "SUCO"]],
+    ["🙋 🍞", ["EU", "QUERO", "PÃO"]],
+  ]),
+  phrases("frases-cores", [
+    ["🍎 🔴", ["A", "MAÇÃ", "É", "VERMELHA"]],
+    ["🍌 🟡", ["A", "BANANA", "É", "AMARELA"]],
+    ["⚽ 🔵", ["A", "BOLA", "É", "AZUL"]],
+  ]),
+  phrases("frases-objetos", [
+    ["👧 📕", ["A", "MENINA", "ABRE", "O", "LIVRO"]],
+    ["👦 ✏️", ["O", "MENINO", "PEGA", "O", "LÁPIS"]],
+    ["🙋 🎒", ["EU", "FECHO", "A", "MOCHILA"]],
+  ]),
+  phrases("frases-emocoes", [
+    ["👧 😊", ["A", "MENINA", "ESTÁ", "FELIZ"]],
+    ["👦 😢", ["O", "MENINO", "ESTÁ", "TRISTE"]],
+    ["🙋 😌", ["EU", "ESTOU", "CALMO"]],
+  ]),
+  phrases("frases-transportes", [
+    ["✈️ ☁️", ["O", "AVIÃO", "VOA", "NO", "CÉU"]],
+    ["🚤 🌊", ["O", "BARCO", "NAVEGA", "NO", "MAR"]],
+    ["🚗 🛣️", ["O", "CARRO", "SEGUE", "NA", "ESTRADA"]],
+  ]),
+  phrases("frases-movimento", [
+    ["👦 🏃", ["O", "MENINO", "CORRE"]],
+    ["👧 🪢", ["A", "MENINA", "PULA", "CORDA"]],
+    ["🙋 💃", ["EU", "DANÇO"]],
+  ]),
+  phrases("frases-jardim", [
+    ["🌱 🌿", ["A", "PLANTA", "CRESCE"]],
+    ["👧 🌻", ["A", "MENINA", "REGA", "A", "FLOR"]],
+    ["🐝 🌼", ["A", "ABELHA", "POUSA", "NA", "FLOR"]],
+  ]),
 ];
 export const allContent: Record<string, ActivityContent> = {
   ...freeContent,

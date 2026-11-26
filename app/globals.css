@@ -3355,37 +3355,6 @@ body {
   border-color: #a5efc8;
   color: #168269;
 }
-.kids-difficulty {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 13px;
-  margin-bottom: 23px;
-}
-.kids-difficulty > button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  min-height: 81px;
-  border: 2px solid #dfe5f1;
-  background: white;
-  border-radius: 18px;
-  color: var(--kids-ink);
-}
-.kids-difficulty > button.selected {
-  background: var(--kids-purple);
-  border-color: var(--kids-purple);
-  color: white;
-}
-.kids-difficulty > button > span {
-  font-size: 19px;
-  letter-spacing: 0;
-}
-.kids-difficulty small {
-  font-size: 10px;
-  font-weight: 700;
-}
 .kids-activity-list {
   display: grid;
   gap: 14px;
